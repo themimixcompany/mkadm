@@ -5,13 +5,26 @@ set -o pipefail
 
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly OS=$(uname)
-readonly VERSION=1.0.0
+readonly VERSION=1.0.1
 
 readonly OPT_BASE_NAME=${SELF}
 
 OPT_HELP=
 OPT_DEBUG=
 OPT_VERBOSE=
+
+declare -A SUBSTITUTIONS=(
+    ['wiki\.js\.org']="miki.mimix.io"
+    ['Wiki\.js']="Miki"
+    ['WIKI\.js']="Miki"
+    ['wiki\.js']="miki"
+    ['wiki-js']="miki"
+    ['wikijs']="miki"
+    ['github\.com/Requarks/wiki']="github.com/themimixcompany/miki"
+    ['requarks\.io']="mimix.io"
+    ['requarks']="mimix"
+    ['Requarks']="Mimix"
+)
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -85,31 +98,19 @@ EOF
   exit 0
 }
 
+function initialize () {
+  debug ${FUNCNAME[0]} "$@"
+
+  cd "$1"
+}
+
 function update_files () {
   debug ${FUNCNAME[0]} "$@"
 
-  for i in $(rg -l 'wiki\.js\.org'); do
-    sed -i -e 's/wiki\.js\.org/miki.mimix.org/g' "$i"
-  done
-
-  for i in $(rg -l 'Wiki\.js'); do
-    sed -i -e 's/Wiki\.js/Miki/g' "$i"
-  done
-
-  for i in $(rg -l 'WIKI\.js'); do
-    sed -i -e 's/WIKI\.js/Miki/g' "$i"
-  done
-
-  for i in $(rg -l 'wiki\.js'); do
-    sed -i -e 's/wiki\.js/miki/g' "$i"
-  done
-
-  for i in $(rg -l 'wiki-js'); do
-    sed -i -e 's/wiki-js/miki/g' "$i"
-  done
-
-  for i in $(rg -l 'wikijs'); do
-    sed -i -e 's/wikijs/miki/g' "$i"
+  for i in "${!SUBSTITUTIONS[@]}"; do
+    for file in $(rg -l "$i"); do
+      sed -i -e "s|${i}|${SUBSTITUTIONS[$i]}|g" "$file"
+    done
   done
 }
 
@@ -118,6 +119,9 @@ function main () {
 
   parse_arguments "$@"
   process_arguments "$@"
+
+  initialize "$@"
+  update_files
 }
 
 main "$@"
