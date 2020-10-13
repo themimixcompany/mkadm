@@ -5,26 +5,13 @@ set -o pipefail
 
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly OS=$(uname)
-readonly VERSION=1.0.1
+readonly VERSION=1.0.3
 
 readonly OPT_BASE_NAME=${SELF}
 
 OPT_HELP=
 OPT_DEBUG=
 OPT_VERBOSE=
-
-declare -A SUBSTITUTIONS=(
-    ['wiki\.js\.org']="miki.mimix.io"
-    ['Wiki\.js']="Miki"
-    ['WIKI\.js']="Miki"
-    ['wiki\.js']="miki"
-    ['wiki-js']="miki"
-    ['wikijs']="miki"
-    ['github\.com/Requarks/wiki']="github.com/themimixcompany/miki"
-    ['requarks\.io']="mimix.io"
-    ['requarks']="mimix"
-    ['Requarks']="Mimix"
-)
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -98,10 +85,29 @@ EOF
   exit 0
 }
 
+declare -A SUBSTITUTIONS=(
+    ['wiki\.js\.org']="miki.mimix.io"
+    ['Wiki\.js']="Miki"
+    ['WIKI\.js']="Miki"
+    ['wiki\.js']="miki"
+    ['wiki-js']="miki"
+    ['wikijs']="miki"
+    ['github\.com/Requarks/wiki']="github.com/themimixcompany/miki"
+    ['requarks\.io']="mimix.io"
+    ['requarks']="mimix"
+    ['Requarks']="Mimix"
+)
+
 function initialize () {
   debug ${FUNCNAME[0]} "$@"
 
   cd "$1"
+
+  if [[ -e "package.json" && "$(jq '.name' package.json)" == "wiki" ]]; then
+    return 0
+  else
+    error "!"
+  fi
 }
 
 function update_files () {
@@ -114,6 +120,21 @@ function update_files () {
   done
 }
 
+function delete_files () {
+  debug ${FUNCNAME[0]} "$@"
+
+  rm -f README.md SECURITY.md
+  rm -rf .github
+}
+
+function create_readme () {
+  debug ${FUNCNAME[0]} "$@"
+
+  cat << EOF > README.md
+# miki
+EOF
+}
+
 function main () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -122,6 +143,8 @@ function main () {
 
   initialize "$@"
   update_files
+  delete_files
+  create_readme
 }
 
 main "$@"
