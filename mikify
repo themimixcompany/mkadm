@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.4
+readonly VERSION=1.0.5
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -16,6 +16,12 @@ OPT_VERBOSE=
 
 OPT_RESOURCES_DIR=${SELF_DIR}/resources
 OPT_ASSETS_DIR=${OPT_RESOURCES_DIR}/assets
+
+OPT_WIKI_NAME=
+OPT_WIKI_DOMAIN=
+OPT_WIKI_RESOURCES=
+OPT_WIKI_GITHUB=
+OPT_COMPANY_NAME=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -46,7 +52,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hdv --longoptions help,debug,verbose -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hdvN:D:G:C:R: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,wiki-github:,company-name: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -59,6 +65,11 @@ function parse_arguments () {
       (-h|--help) OPT_HELP=true; shift ;;
       (-d|--debug) OPT_DEBUG=true; shift ;;
       (-v|--verbose) OPT_VERBOSE=true; shift ;;
+      (-N|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
+      (-D|--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
+      (-R|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
+      (-G|--wiki-github) OPT_WIKI_GITHUB=$2; shift 2 ;;
+      (-C|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -69,6 +80,8 @@ function process_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_HELP}" || "${#}" -lt 1 ]]; then
+    display_usage
+  elif [[ -z "${OPT_WIKI_NAME}" || -z "${OPT_WIKI_DOMAIN}" || -z "${OPT_WIKI_RESOURCES}" || -z "${OPT_WIKI_GITHUB}" || -z "${OPT_COMPANY_NAME}" ]]; then
     display_usage
   else
     return 0
@@ -82,31 +95,43 @@ function display_usage () {
 ${SELF} [OPTIONS]...
 
 OPTIONS:
-  -h, --help       Show this help
-  -d, --debug      Enable debugging mode
-  -v, --verbose    Enable verbose output
+  -h, --help            Show this help
+  -d, --debug           Enable debugging mode
+  -v, --verbose         Enable verbose output
+  -N, --wiki-name       Set wiki name
+  -D, --wiki-domain     Set wiki domain
+  -R, --wiki-resources  Set URL of wiki resources
+  -G, --wiki-github     Set URL of wiki GitHub page
+  -C, --company-name    Set company name
 EOF
   exit 0
 }
 
-declare -A SUBSTITUTIONS=(
-    ['wiki\.js\.org']="miki.mimix.io"
-    ['Wiki\.js']="Miki"
-    ['WIKI\.js']="Miki"
-    ['wiki\.js']="miki"
-    ['wiki-js']="miki"
-    ['wikijs']="miki"
-    ['github\.com/Requarks/wiki']="github.com/themimixcompany/miki"
+function set_substitutions () {
+  # echo "${VAR^}"
+  declare -A SUBSTITUTIONS=(
+    ['https://static\.requarks\.io/logo']="${OPT_WIKI_RESOURCES}"
+    ['https://github\.com/Requarks/wiki']="${OPT_WIKI_GITHUB}"
 
-    #['requarks\.io']="mimix.io"
-    #['requarks']="mimix"
-    #['Requarks']="Mimix"
-)
+    ['wiki\.yourdomain\.com']="${OPT_WIKI_DOMAIN}"
+    ['wiki\.js\.org']="${OPT_WIKI_DOMAIN}"
+    ['Wiki\.js']="${OPT_WIKI_NAME^}"
+    ['WIKI\.js']="${OPT_WIKI_NAME^}"
+    ['wiki\.js']="${OPT_WIKI_NAME}"
+    ['wiki-js']="${OPT_WIKI_NAME}"
+    ['wikijs']="${OPT_WIKI_NAME}"
+
+    #['requarks\.io']='mimix.io'
+    #['requarks']='mimix'
+    #['Requarks']='Mimix'
+
+    # workaround
+    ['miki-butterfly\.svg']="${OPT_COMPANY_NAME}.svg"
+  )
+}
 
 function initialize () {
   debug ${FUNCNAME[0]} "$@"
-
-  cd "$1"
 
   if [[ -e "package.json" && "$(jq '.name' package.json)" == \"wiki\" ]]; then
     return 0
@@ -117,6 +142,26 @@ function initialize () {
 
 function update_files () {
   debug ${FUNCNAME[0]} "$@"
+
+  declare -A SUBSTITUTIONS=(
+    ['https://static\.requarks\.io/logo']="${OPT_WIKI_RESOURCES}"
+    ['https://github\.com/Requarks/wiki']="${OPT_WIKI_GITHUB}"
+
+    ['wiki\.yourdomain\.com']="${OPT_WIKI_DOMAIN}"
+    ['wiki\.js\.org']="${OPT_WIKI_DOMAIN}"
+    ['Wiki\.js']="${OPT_WIKI_NAME^}"
+    ['WIKI\.js']="${OPT_WIKI_NAME^}"
+    ['wiki\.js']="${OPT_WIKI_NAME}"
+    ['wiki-js']="${OPT_WIKI_NAME}"
+    ['wikijs']="${OPT_WIKI_NAME}"
+
+    #['requarks\.io']='mimix.io'
+    #['requarks']='mimix'
+    #['Requarks']='Mimix'
+
+    # workaround?
+    ['miki-butterfly\.svg']="${OPT_COMPANY_NAME}.svg"
+  )
 
   for i in "${!SUBSTITUTIONS[@]}"; do
     for file in $(rg -l "$i"); do
