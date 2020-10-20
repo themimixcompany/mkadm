@@ -1,4 +1,4 @@
-/*! Wiki.js - wiki.js.org - Licensed under AGPL */
+/*! Miki - miki.mimix.io - Licensed under AGPL */
 (this.webpackJsonp = this.webpackJsonp || []).push([
     ["admin"], {
         "./client/components/admin.vue": function(e, t, n) {
@@ -387,9 +387,7 @@
                         href: "/graphql",
                         color: "primary"
                     }
-                }, [n("v-list-item-title", [e._v("GraphQL")])], 1)], 1) : e._e(), n("v-divider", {
-                    staticClass: "my-2"
-                })] : e._e(), ], 2)], 1)], 1), n("v-main", {
+                }, [n("v-list-item-title", [e._v("GraphQL")])], 1)], 1) : e._e()] : e._e(), ], 2)], 1)], 1), n("v-main", {
                     class: e.$vuetify.theme.dark ? "grey darken-5" : "grey lighten-5"
                 }, [n("transition", {
                     attrs: {
@@ -4222,7 +4220,7 @@
                     }
                 }, [e._v("requarks.io")]), n("a", {
                     attrs: {
-                        href: "https://github.com/Requarks/wiki/graphs/contributors",
+                        href: "https://github.com/themimixcompany/miki/graphs/contributors",
                         target: "_blank"
                     }
                 }, [e._v(e._s(e.$t("admin:contribute.openSourceContributors")))])], 1), n("div", {
@@ -4339,7 +4337,7 @@
                 }, [e._v(e._s(e.$t("admin:contribute.openCollective")))]), n("a", {
                     staticClass: "ml-3",
                     attrs: {
-                        href: "https://opencollective.com/wikijs/donate",
+                        href: "https://opencollective.com/miki/donate",
                         title: e.$t("admin:contribute.makeADonation")
                     }
                 }, [n("img", {
@@ -4422,7 +4420,7 @@
                     attrs: {
                         outlined: "",
                         color: e.$vuetify.theme.dark ? "blue lighten-1" : "primary",
-                        href: "https://wikijs.threadless.com",
+                        href: "https://miki.threadless.com",
                         large: ""
                     }
                 }, [n("v-icon", {
@@ -4452,7 +4450,7 @@
                     }
                 }, [n("a", {
                     attrs: {
-                        href: "https://github.com/Requarks/wiki/issues",
+                        href: "https://github.com/themimixcompany/miki/issues",
                         target: "_blank"
                     }
                 }, [e._v("Github")])]), n("i18next", {
@@ -4568,7 +4566,7 @@
                     }
                 }, [n("v-list-item", [n("v-list-item-avatar", [n("img", {
                     attrs: {
-                        src: "https://static.requarks.io/logo/algolia.svg",
+                        src: "https://mimix.io/wp-content/uploads/algolia.svg",
                         alt: "Algolia"
                     }
                 })]), n("v-list-item-content", [n("v-list-item-title", [e._v("Algolia")]), n("v-list-item-subtitle", [e._v("Algolia is a powerful search-as-a-service solution, made easy to use with API clients, UI libraries, and pre-built integrations.")])], 1), n("v-list-item-action", [n("v-btn", {
@@ -4583,7 +4581,7 @@
                     }
                 }, [e._v("mdi-earth")])], 1)], 1)], 1), n("v-divider"), n("v-list-item", [n("v-list-item-avatar", [n("img", {
                     attrs: {
-                        src: "https://static.requarks.io/logo/browserstack.svg",
+                        src: "https://mimix.io/wp-content/uploads/browserstack.svg",
                         alt: "Browserstack"
                     }
                 })]), n("v-list-item-content", [n("v-list-item-title", [e._v("BrowserStack")]), n("v-list-item-subtitle", [e._v("BrowserStack is a cloud web and mobile testing platform that enables developers to test their websites and mobile applications.")])], 1), n("v-list-item-action", [n("v-btn", {
@@ -4598,7 +4596,7 @@
                     }
                 }, [e._v("mdi-earth")])], 1)], 1)], 1), n("v-divider"), n("v-list-item", [n("v-list-item-avatar", [n("img", {
                     attrs: {
-                        src: "https://static.requarks.io/logo/cloudflare.svg",
+                        src: "https://mimix.io/wp-content/uploads/cloudflare.svg",
                         alt: "Cloudflare"
                     }
                 })]), n("v-list-item-content", [n("v-list-item-title", [e._v("Cloudflare")]), n("v-list-item-subtitle", [e._v("Providing content delivery network services, DDoS mitigation, Internet security and distributed domain name server services.")])], 1), n("v-list-item-action", [n("v-btn", {
@@ -4613,7 +4611,7 @@
                     }
                 }, [e._v("mdi-earth")])], 1)], 1)], 1), n("v-divider"), n("v-list-item", [n("v-list-item-avatar", [n("img", {
                     attrs: {
-                        src: "https://static.requarks.io/logo/digitalocean.svg",
+                        src: "https://mimix.io/wp-content/uploads/digitalocean.svg",
                         alt: "DigitalOcean"
                     }
                 })]), n("v-list-item-content", [n("v-list-item-title", [e._v("DigitalOcean")]), n("v-list-item-subtitle", [e._v("Providing developers and businesses a reliable, easy-to-use cloud computing platform of virtual servers (Droplets), object storage (Spaces), and more.")])], 1), n("v-list-item-action", [n("v-btn", {
@@ -4651,7 +4649,7 @@
                     }
                 }, [n("img", {
                     attrs: {
-                        src: "https://static.requarks.io/logo/lokalise.png",
+                        src: "https://mimix.io/wp-content/uploads/lokalise.png",
                         alt: "Lokalise"
                     }
                 })]), n("v-list-item-content", [n("v-list-item-title", [e._v("Lokalise")]), n("v-list-item-subtitle", [e._v("Lokalise is a translation management system built for agile teams who want to automate their localization process.")])], 1), n("v-list-item-action", [n("v-btn", {
@@ -4670,7 +4668,7 @@
                     }
                 }, [n("img", {
                     attrs: {
-                        src: "https://static.requarks.io/logo/netlify.svg",
+                        src: "https://mimix.io/wp-content/uploads/netlify.svg",
                         alt: "Netlify"
                     }
                 })]), n("v-list-item-content", [n("v-list-item-title", [e._v("Netlify")]), n("v-list-item-subtitle", [e._v("Deploy modern static websites with Netlify. Get CDN, Continuous deployment, 1-click HTTPS, and all the services you need.")])], 1), n("v-list-item-action", [n("v-btn", {
@@ -4903,7 +4901,7 @@
                     staticClass: "headline primary--text animated fadeInLeft"
                 }, [e._v(e._s(e.$t("admin:dashboard.title")))]), n("div", {
                     staticClass: "subtitle-1 grey--text animated fadeInLeft wait-p2s"
-                }, [e._v(e._s(e.$t("admin:dashboard.subtitle")))])])])]), n("v-flex", {
+                })])])]), n("v-flex", {
                     attrs: {
                         xs12: "",
                         md6: "",
@@ -4979,47 +4977,6 @@
                         easing: "easeOutQuint"
                     }
                 })], 1)], 1)], 1), n("v-flex", {
-                    attrs: {
-                        xs12: "",
-                        md6: "",
-                        lg12: "",
-                        xl3: "",
-                        "d-flex": ""
-                    }
-                }, [n("v-card", {
-                    staticClass: "dashboard-card animated fadeInUp wait-p6s",
-                    class: e.isLatestVersion ? "green" : "red lighten-2",
-                    attrs: {
-                        dark: ""
-                    }
-                }, [e.hasPermission("manage:system") ? n("v-btn", {
-                    staticClass: "btn-animate-wrench",
-                    attrs: {
-                        fab: "",
-                        absolute: "",
-                        right: !e.$vuetify.rtl,
-                        left: e.$vuetify.rtl,
-                        top: "",
-                        small: "",
-                        light: "",
-                        to: "system"
-                    }
-                }, [n("v-icon", {
-                    attrs: {
-                        color: e.isLatestVersion ? "green" : "red darken-4",
-                        small: ""
-                    }
-                }, [e._v("mdi-wrench")])], 1) : e._e(), n("v-card-text", [n("v-icon", {
-                    staticClass: "dashboard-icon"
-                }, [e._v("mdi-blur")]), n("div", {
-                    staticClass: "subtitle-1"
-                }, [e._v("Wiki.js " + e._s(e.info.currentVersion))]), e.isLatestVersion ? n("div", {
-                    staticClass: "body-2"
-                }, [e._v(e._s(e.$t("admin:dashboard.versionLatest")))]) : n("div", {
-                    staticClass: "body-2"
-                }, [e._v(e._s(e.$t("admin:dashboard.versionNew", {
-                    version: e.info.latestVersion
-                })))])], 1)], 1)], 1), n("v-flex", {
                     attrs: {
                         xs12: "",
                         xl6: ""
@@ -10895,7 +10852,7 @@
                     }
                 }, [n("v-toolbar-title", {
                     staticClass: "subtitle-1"
-                }, [e._v(e._s(e.$t("admin:mail.dkim")))])], 1), n("v-card-info", [n("span", [e._v(e._s(e.$t("admin:mail.dkimHint")))])]), n("div", {
+                }, [e._v(e._s(e.$t("admin:mail.dkim")))])], 1), n("div", {
                     staticClass: "pa-4"
                 }, [n("v-switch", {
                     attrs: {
@@ -14908,7 +14865,7 @@
                         label: "Trust X-Forwarded-* Proxy Headers",
                         color: "red darken-2",
                         "persistent-hint": "",
-                        hint: "Should be enabled when using a reverse-proxy like nginx, apache, CloudFlare, etc in front of Wiki.js. Turn off otherwise."
+                        hint: "Should be enabled when using a reverse-proxy like nginx, apache, CloudFlare, etc in front of Miki. Turn off otherwise."
                     },
                     model: {
                         value: e.config.securityTrustProxy,
@@ -14976,11 +14933,7 @@
                     }
                 }, [n("v-toolbar-title", {
                     staticClass: "subtitle-1"
-                }, [e._v(e._s(e.$t("admin:security.uploads")))])], 1), n("v-card-info", {
-                    attrs: {
-                        color: "blue"
-                    }
-                }, [n("span", [e._v(e._s(e.$t("admin:security.uploadsInfo")))])]), n("v-card-text", [n("v-text-field", {
+                }, [e._v(e._s(e.$t("admin:security.uploads")))])], 1), n("v-card-text", [n("v-text-field", {
                     staticClass: "mt-3",
                     staticStyle: {
                         "max-width": "450px"
@@ -15201,7 +15154,7 @@
                             authAutoLogin: !1,
                             authHideLocal: !1,
                             authLoginBgUrl: "",
-                            authJwtAudience: "urn:wiki.js",
+                            authJwtAudience: "urn:miki",
                             authJwtExpiration: "30m",
                             authJwtRenewablePeriod: "14d"
                         },
@@ -17825,7 +17778,7 @@
                     attrs: {
                         color: "grey"
                     }
-                }, [e._v("mdi-refresh")])], 1), n("v-subheader", [e._v("Wiki.js")]), n("v-list", {
+                }, [e._v("mdi-refresh")])], 1), n("v-subheader", [e._v("Miki")]), n("v-list", {
                     attrs: {
                         "two-line": "",
                         dense: ""
@@ -17839,7 +17792,7 @@
                 }, [n("div", {
                     staticClass: "caption indigo--text pl-3",
                     class: e.$vuetify.theme.dark ? "text--lighten-4" : ""
-                }, [e._v("Wiki.js can perform the upgrade to the latest version for you.")]), n("v-spacer"), n("v-btn", {
+                }, [e._v("Miki can perform the upgrade to the latest version for you.")]), n("v-spacer"), n("v-btn", {
                     staticClass: "px-3",
                     attrs: {
                         color: "indigo",
@@ -17955,7 +17908,7 @@
                     }
                 }), n("div", {
                     staticClass: "body-2 mt-5 blue--text text--lighten-4"
-                }, [e._v("Your Wiki.js container is being upgraded...")]), n("div", {
+                }, [e._v("Your Miki container is being upgraded...")]), n("div", {
                     staticClass: "caption blue--text text--lighten-2"
                 }, [e._v("Please wait")]), n("v-progress-linear", {
                     staticClass: "mt-5",
@@ -24614,11 +24567,11 @@
                     }
                 }), n("div", {
                     staticClass: "body-2"
-                }, [e._v("Import from Wiki.js 1.x")])]), n("v-divider", {
+                }, [e._v("Import from Miki 1.x")])]), n("v-divider", {
                     staticClass: "my-4"
                 }), n("div", {
                     staticClass: "body-2"
-                }, [e._v("Data from a Wiki.js 1.x installation can easily be imported using this tool. What do you want to import?")]), n("v-checkbox", {
+                }, [e._v("Data from a Miki 1.x installation can easily be imported using this tool. What do you want to import?")]), n("v-checkbox", {
                     attrs: {
                         label: "Content + Uploads",
                         value: "content",
@@ -24854,7 +24807,7 @@
                     staticClass: "caption mt-2"
                 }, [e._v("This folder should be empty or not exist yet. "), n("strong", {
                     staticClass: "deep-orange--text text--darken-2"
-                }, [e._v("DO NOT")]), e._v(" point to your existing Wiki.js 1.x repository folder. In most cases, it should be left to the default value.")])], 1)], 2), n("v-alert", {
+                }, [e._v("DO NOT")]), e._v(" point to your existing Miki 1.x repository folder. In most cases, it should be left to the default value.")])], 1)], 2), n("v-alert", {
                     attrs: {
                         color: "deep-orange",
                         outlined: "",
@@ -24887,7 +24840,7 @@
                         fn: function() {
                             return [n("div", [n("span", [e._v("Import from local folder")]), n("div", {
                                 staticClass: "caption"
-                            }, [n("em", [e._v("Choose this option only if you didn't have git configured in your Wiki.js 1.x installation.")])])])]
+                            }, [n("em", [e._v("Choose this option only if you didn't have git configured in your Miki 1.x installation.")])])])]
                         },
                         proxy: !0
                     }], null, !1, 563481907)
@@ -24897,7 +24850,7 @@
                     attrs: {
                         outlined: "",
                         label: "Content Repo Path",
-                        hint: "The absolute path to where the Wiki.js 1.x content is stored on disk.",
+                        hint: "The absolute path to where the Miki 1.x content is stored on disk.",
                         "persistent-hint": ""
                     },
                     model: {
@@ -24936,7 +24889,7 @@
                     attrs: {
                         outlined: "",
                         label: "MongoDB Connection String",
-                        hint: "The connection string to connect to the Wiki.js 1.x MongoDB database.",
+                        hint: "The connection string to connect to the Miki 1.x MongoDB database.",
                         "persistent-hint": ""
                     },
                     model: {
@@ -25064,7 +25017,7 @@
                     }
                 }), n("div", {
                     staticClass: "mt-5 body-1 white--text"
-                }, [e._v("Importing from Wiki.js 1.x...")]), n("div", {
+                }, [e._v("Importing from Miki 1.x...")]), n("div", {
                     staticClass: "caption"
                 }, [e._v("Please wait")]), n("v-progress-linear", {
                     staticClass: "mt-5",
@@ -25498,7 +25451,7 @@
                     staticClass: "subtitle-2"
                 }, [e._v("What is telemetry?")]), n("div", {
                     staticClass: "body-2 mt-3"
-                }, [e._v("Telemetry allows the developers of Wiki.js to improve the software by collecting basic anonymized data about its usage and the host info. "), n("br"), e._v(" This is entirely optional and "), n("strong", [e._v("absolutely no")]), e._v(" private data (such as content or personal data) is collected.")]), n("div", {
+                }, [e._v("Telemetry allows the developers of Miki to improve the software by collecting basic anonymized data about its usage and the host info. "), n("br"), e._v(" This is entirely optional and "), n("strong", [e._v("absolutely no")]), e._v(" private data (such as content or personal data) is collected.")]), n("div", {
                     staticClass: "body-2 mt-3"
                 }, [e._v("For maximum privacy, a random client ID is generated during setup. This ID is used to group requests together while keeping complete anonymity. You can reset and generate a new one below at any time.")]), n("v-divider", {
                     staticClass: "my-4"
@@ -25508,7 +25461,7 @@
                     staticClass: "body-2 mt-3"
                 }, [e._v("When telemetry is enabled, only the following data is transmitted:")]), n("v-list", [n("v-list-item", [n("v-list-item-avatar", [n("v-icon", [e._v("mdi-information-outline")])], 1), n("v-list-item-content", [n("v-list-item-title", {
                     staticClass: "body-2"
-                }, [e._v("Version of Wiki.js installed")]), n("v-list-item-subtitle", {
+                }, [e._v("Version of Miki installed")]), n("v-list-item-subtitle", {
                     staticClass: "caption"
                 }, [n("em", [e._v("e.g. v2.0.123")])])], 1)], 1), n("v-list-item", [n("v-list-item-avatar", [n("v-icon", [e._v("mdi-information-outline")])], 1), n("v-list-item-content", [n("v-list-item-title", {
                     staticClass: "body-2"
@@ -25530,7 +25483,7 @@
                     staticClass: "subtitle-2"
                 }, [e._v("What is it used for?")]), n("div", {
                     staticClass: "body-2 mt-3"
-                }, [e._v("Telemetry is used by developers to improve Wiki.js, mostly for the following reasons:")]), n("v-list", {
+                }, [e._v("Telemetry is used by developers to improve Miki, mostly for the following reasons:")]), n("v-list", {
                     attrs: {
                         dense: ""
                     }
@@ -25542,7 +25495,7 @@
                     staticClass: "body-2"
                 }, [e._v(" Optimize performance and testing scenarios based on most popular environments.")])])], 1)], 1)], 1), n("div", {
                     staticClass: "body-2"
-                }, [e._v("Only authorized developers have access to the data. It is not shared to any 3rd party nor is it used for any other application than improving Wiki.js.")]), n("v-divider", {
+                }, [e._v("Only authorized developers have access to the data. It is not shared to any 3rd party nor is it used for any other application than improving Miki.")]), n("v-divider", {
                     staticClass: "my-4"
                 }), n("div", {
                     staticClass: "subtitle-2"
@@ -25553,7 +25506,7 @@
                     attrs: {
                         label: "Enable Telemetry",
                         color: "primary",
-                        hint: "Allow Wiki.js to transmit telemetry data.",
+                        hint: "Allow Miki to transmit telemetry data.",
                         "persistent-hint": ""
                     },
                     model: {
@@ -25829,16 +25782,6 @@
                             key: "UtilityCache",
                             icon: "mdi-database-refresh",
                             i18nKey: "cache",
-                            isAvailable: !0
-                        }, {
-                            key: "UtilityImportv1",
-                            icon: "mdi-database-import",
-                            i18nKey: "importv1",
-                            isAvailable: !0
-                        }, {
-                            key: "UtilityTelemetry",
-                            icon: "mdi-math-compass",
-                            i18nKey: "telemetry",
                             isAvailable: !0
                         }]
                     })
