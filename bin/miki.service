@@ -1,0 +1,16 @@
+[Unit]
+Description=Miki
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/miki
+Environment=NODE_EXTRA_CA_CERTS=/var/miki/keys/ca.crt
+ExecStart=/usr/bin/node server
+Restart=always
+# Consider creating a dedicated user for Wiki.js here:
+#User=nobody
+#Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
