@@ -310,11 +310,25 @@ function delete_tarball () {
   rm -f "${OPT_WORK_DIR}.tar.gz"
 }
 
+function create_init_sql () {
+  debug ${FUNCNAME[0]} "$@"
+
+  cat << EOF > init.sql
+create user miki password '$(cat ${OPT_PASSWORD_FILE})'
+EOF
+}
+
+function copy_bin () {
+  debug ${FUNCNAME[0]} "$@"
+
+  cp "${SELF_DIR}/bin/miki.service" .
+}
+
 function create_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
   popd &> /dev/null
-  tar czf "${OPT_WORK_DIR}.tar.gz" "${OPT_WORK_DIR}"
+  tar -czf "${OPT_WORK_DIR}.tar.gz" --exclude ".git" "${OPT_WORK_DIR}"
 }
 
 function main () {
@@ -334,9 +348,13 @@ function main () {
   update_package_json
 
   create_password_file
-  create_config_yml
-  delete_password_file
 
+  create_config_yml
+  create_init_sql
+
+  copy_bin
+
+  delete_password_file
   create_tarball "$@"
 }
 
