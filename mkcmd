@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.15
+readonly VERSION=1.0.16
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -313,17 +313,18 @@ function delete_tarball () {
 function create_init_sql () {
   debug ${FUNCNAME[0]} "$@"
 
-  cat << EOF > init.sql
-CREATE database mikidb
-CREATE user miki password '$(cat ${OPT_PASSWORD_FILE})'
-GRANT ALL PRIVILEGES ON mikidb TO miki
+  mkdir -p sql
+  cat << EOF > sql/init.sql
+CREATE database mikidb;
+CREATE user miki password '$(cat ${OPT_PASSWORD_FILE})';
+GRANT ALL PRIVILEGES ON DATABASE mikidb TO miki;
 EOF
 }
 
 function copy_bin () {
   debug ${FUNCNAME[0]} "$@"
 
-  cp "${SELF_DIR}/bin/miki.service" .
+  cp -a "${SELF_DIR}/bin" .
 }
 
 function create_tarball () {

@@ -5,6 +5,7 @@ set -o pipefail
 
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+readonly VERSION=1.0.0
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -65,7 +66,7 @@ function parse_arguments () {
 function process_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_HELP}" || "${#}" -lt 1 ]]; then
+  if [[ -n "${OPT_HELP}" ]]; then
     display_usage
   else
     return 0
@@ -93,18 +94,11 @@ function install_node_js () {
   apt-get install -y nodejs build-essential
 }
 
-function install_miki_app () {
-  debug ${FUNCNAME[0]} "$@"
-
-  tar -C /var -xvf /root/miki.tar.gz
-}
-
 function install_postgres () {
   debug ${FUNCNAME[0]} "$@"
 
   apt-get install -y postgresql postgresql-contrib
-  sudo -u postgres psql --file=/var/miki/init.sql
-  #sudo -u postgres createdb mikidb
+  sudo -u postgres psql --file=/var/miki/sql/init.sql
 }
 
 function install_miki_service () {
@@ -128,11 +122,8 @@ function main () {
   process_arguments "$@"
 
   install_node_js
-
-  install_wiki_app
   install_postgres
   install_miki_service
-
   start_miki_service
 }
 
