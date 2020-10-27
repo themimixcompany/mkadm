@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.20
+readonly VERSION=1.0.21
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -43,6 +43,10 @@ OPT_DROPLET_USER=root
 OPT_DROPLET_NAME=
 OPT_DROPLET_ADDRESS=
 
+OPT_FIREWALL_NAME=
+OPT_FIREWALL_ADDRESSES=
+OPT_FIREWALL_PORTS=
+
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
     echo "error: ${@}" >&2
@@ -72,7 +76,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hdvW:D:R:C:O:P:sSTIK:N: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,droplet-install,ssh-key:,droplet-name: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hdvW:D:R:C:O:V:sSTIK:N:F:A:P: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,droplet-install,ssh-key:,droplet-name:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -90,13 +94,16 @@ function parse_arguments () {
       (-R|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
       (-C|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
       (-O|--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
-      (-P|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
+      (-V|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
       (-s|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-S|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
       (-T|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
       (-I|--droplet-install) OPT_DROPLET_INSTALL=true; shift ;;
       (-K|--ssh-key) OPT_SSH_KEY=$2; shift 2 ;;
       (-N|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
+      (-F|--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
+      (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
+      (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -126,21 +133,24 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-  -h, --help            Show this help
-  -d, --debug           Enable debugging mode
-  -v, --verbose         Enable verbose output
-  -N, --wiki-name       Set wiki name
-  -D, --wiki-domain     Set wiki domain
-  -R, --wiki-resources  Set location of wiki resources
-  -C, --company-name    Set company name
-  -O, --company-domain  Set company domain
-  -P, --package-version Set version in package.json
-  -s, --enable-wiki-ssl Enable wiki SSL (default: ${OPT_ENABLE_WIKI_SSL})
-  -S, --enable-db-ssl   Enable database SSL (default: ${OPT_ENABLE_DB_SSL})
-  -T, --make-tarball    Create a tarball of the input
-  -I, --droplet-install Install on droplet
-  -K, --ssh-key         Specify the allowed SSH key for the droplet
-  -N, --droplet-name    Set the name of droplet to create
+  -h, --help               Show this help
+  -d, --debug              Enable debugging mode
+  -v, --verbose            Enable verbose output
+  -N, --wiki-name          Set wiki name
+  -D, --wiki-domain        Set wiki domain
+  -R, --wiki-resources     Set location of wiki resources
+  -C, --company-name       Set company name
+  -O, --company-domain     Set company domain
+  -P, --package-version    Set version in package.json
+  -s, --enable-wiki-ssl    Enable wiki SSL (default: ${OPT_ENABLE_WIKI_SSL})
+  -S, --enable-db-ssl      Enable database SSL (default: ${OPT_ENABLE_DB_SSL})
+  -T, --make-tarball       Create a tarball of the input
+  -I, --droplet-install    Install on droplet
+  -K, --ssh-key            Specify the allowed SSH key for the droplet
+  -N, --droplet-name       Set the name of droplet to create
+  -F, --firewall-name      Set the name of firewall for this droplet
+  -A, --firewall-addresses A comma-separated list of IP addresses to allow on the droplet
+  -P, --firewall-ports     A comma-separated list of allowed ports on the droplet
 EOF
   exit 0
 }
@@ -388,6 +398,15 @@ function droplet_install () {
   fi
 }
 
+function create_firewall () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_FIREWALL_NAME}" ]]; then
+    docmd -FCN "${OPT_FIREWALL_NAME}" -n "${OPT_DROPLET_NAME}" \
+          -a "${OPT_FIREWALL_ADDRESSES}" -p "${OPT_FIREWALL_PORTS}"
+  fi
+}
+
 function display_address () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -417,10 +436,12 @@ function main () {
   copy_bin
   delete_password_file
 
-  create_tarball "$@"
+  create_tarball
   create_droplet
   upload_tarball
   droplet_install
+
+  create_firewall
 
   display_address
 }
