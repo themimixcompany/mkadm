@@ -369,10 +369,10 @@ function create_droplet () {
 function upload_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
-  sleep 10
+  sleep 15
   if [[ -n "${OPT_DROPLET_INSTALL}" && -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" && \
         -f "${OPT_WORK_DIR}.tar.gz" && -n "${OPT_DROPLET_USER}" ]]; then
-    scp ${OPT_SSH_OPTIONS} \
+    scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_WORK_DIR}.tar.gz" \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
   fi
@@ -382,7 +382,7 @@ function droplet_install () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_DROPLET_INSTALL}" && -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
-    ssh ${OPT_SSH_OPTIONS} \
+    ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" \
         "tar -C /var -xf ${OPT_WORK_DIR}.tar.gz; bash /var/miki/bin/install.sh"
   fi
@@ -391,8 +391,8 @@ function droplet_install () {
 function display_address () {
   debug ${FUNCNAME[0]} "$@"
 
-  echo ""
-  echo "${OPT_DROPLET_ADDRESS}"
+  echo "http://${OPT_DROPLET_ADDRESS}"
+  echo -n "http://${OPT_DROPLET_ADDRESS}" | xsel -b
 }
 
 function main () {
