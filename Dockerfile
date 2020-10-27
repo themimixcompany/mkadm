@@ -10,7 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install the base packages
 RUN apt-get update
-RUN apt-get install -y software-properties-common build-essential curl git dnsutils
+RUN apt-get install -y software-properties-common build-essential curl git dnsutils xsel
 
 # Install doctl
 RUN cd /tmp && curl -sL https://github.com/digitalocean/doctl/releases/download/v1.48.0/doctl-1.48.0-linux-amd64.tar.gz | tar -xvz
