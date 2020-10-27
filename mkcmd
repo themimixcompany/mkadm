@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.19
+readonly VERSION=1.0.20
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -35,7 +35,11 @@ OPT_PASSWORD_FILE=
 
 OPT_MAKE_TARBALL=
 
-OPT_REMOTE_USER=root
+OPT_SSH_OPTIONS="-o StrictHostKeyChecking=no -o LogLevel=ERROR"
+OPT_SSH_KEY=
+
+OPT_DROPLET_INSTALL=
+OPT_DROPLET_USER=root
 OPT_DROPLET_NAME=
 OPT_DROPLET_ADDRESS=
 
@@ -68,7 +72,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hdvW:D:R:C:O:P:sSTN: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,droplet-name -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hdvW:D:R:C:O:P:sSTIK:N: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,droplet-install,ssh-key:,droplet-name: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -90,6 +94,8 @@ function parse_arguments () {
       (-s|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-S|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
       (-T|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
+      (-I|--droplet-install) OPT_DROPLET_INSTALL=true; shift ;;
+      (-K|--ssh-key) OPT_SSH_KEY=$2; shift 2 ;;
       (-N|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
@@ -105,6 +111,8 @@ function process_arguments () {
   if [[ -n "${OPT_HELP}" || "${#}" -lt 1 ]]; then
     display_usage
   elif [[ -z "${OPT_WIKI_NAME}" || -z "${OPT_WIKI_DOMAIN}" || -z "${OPT_WIKI_RESOURCES}" || -z "${OPT_COMPANY_NAME}" || -z "${OPT_COMPANY_DOMAIN}" ]]; then
+    display_usage
+  elif [[ -n "${OPT_DROPLET_INSTALL}" && -z "${OPT_SSH_KEY}" ]]; then
     display_usage
   else
     return 0
@@ -130,6 +138,8 @@ OPTIONS:
   -s, --enable-wiki-ssl Enable wiki SSL (default: ${OPT_ENABLE_WIKI_SSL})
   -S, --enable-db-ssl   Enable database SSL (default: ${OPT_ENABLE_DB_SSL})
   -T, --make-tarball    Create a tarball of the input
+  -I, --droplet-install Install on droplet
+  -K, --ssh-key         Specify the allowed SSH key for the droplet
   -N, --droplet-name    Set the name of droplet to create
 EOF
   exit 0
@@ -350,27 +360,39 @@ function create_tarball () {
 function create_droplet () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_DROPLET_NAME}" ]]; then
-    OPT_DROPLET_ADDRESS=$(docmd -DCN "${OPT_DROPLET_NAME}")
+  if [[ -n "${OPT_DROPLET_INSTALL}" && -n "${OPT_DROPLET_NAME}" ]]; then
+    OPT_DROPLET_ADDRESS=$(docmd -K "${OPT_SSH_KEY}" -DCN "${OPT_DROPLET_NAME}")
+    echo "${OPT_DROPLET_ADDRESS}"
   fi
 }
 
 function upload_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_DROPLET_NAME}" && "${OPT_DROPLET_ADDRESS}" && \
-        -f "${OPT_WORK_DIR}.tar.gz" && -n "${OPT_REMOTE_USER}" ]]; then
-    rsync -avzP "${OPT_WORK_DIR}.tar.gz" "${OPT_REMOTE_USER}@${OPT_DROPLET_ADDRESS}:"
+  sleep 10
+  if [[ -n "${OPT_DROPLET_INSTALL}" && -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" && \
+        -f "${OPT_WORK_DIR}.tar.gz" && -n "${OPT_DROPLET_USER}" ]]; then
+    scp ${OPT_SSH_OPTIONS} \
+        "${OPT_WORK_DIR}.tar.gz" \
+        "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
   fi
 }
 
-function remote_install () {
+function droplet_install () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
-    ssh "${OPT_REMOTE_USER}@${OPT_DROPLET_ADDRESS}" \
+  if [[ -n "${OPT_DROPLET_INSTALL}" && -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
+    ssh ${OPT_SSH_OPTIONS} \
+        "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" \
         "tar -C /var -xf ${OPT_WORK_DIR}.tar.gz; bash /var/miki/bin/install.sh"
   fi
+}
+
+function display_address () {
+  debug ${FUNCNAME[0]} "$@"
+
+  echo ""
+  echo "${OPT_DROPLET_ADDRESS}"
 }
 
 function main () {
@@ -398,7 +420,9 @@ function main () {
   create_tarball "$@"
   create_droplet
   upload_tarball
-  remote_install
+  droplet_install
+
+  display_address
 }
 
 main "$@"
