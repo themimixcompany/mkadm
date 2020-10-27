@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.16
+readonly VERSION=1.0.17
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -32,6 +32,8 @@ OPT_BASE_COMMIT=12cb810791b18188a53fbbd9ed433acc51a14983
 OPT_ENABLE_WIKI_SSL=false
 OPT_ENABLE_DB_SSL=false
 OPT_PASSWORD_FILE=
+
+OPT_MAKE_TARBALL=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -62,7 +64,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hdvN:D:R:C:O:P:sS --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hdvN:D:R:C:O:P:sST --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -83,6 +85,7 @@ function parse_arguments () {
       (-P|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
       (-s|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-S|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
+      (-T|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -121,6 +124,7 @@ OPTIONS:
   -P, --package-version Set version in package.json
   -s, --enable-wiki-ssl Enable wiki SSL (default: ${OPT_ENABLE_WIKI_SSL})
   -S, --enable-db-ssl   Enable database SSL (default: ${OPT_ENABLE_DB_SSL})
+  -T, --make-tarball    Create a tarball of the input
 EOF
   exit 0
 }
@@ -331,7 +335,10 @@ function create_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
   popd &> /dev/null
-  tar -czf "${OPT_WORK_DIR}.tar.gz" --exclude ".git" "${OPT_WORK_DIR}"
+
+  if [[ -n "${OPT_MAKE_TARBALL}" ]]; then
+    tar -czf "${OPT_WORK_DIR}.tar.gz" --exclude ".git" "${OPT_WORK_DIR}"
+  fi
 }
 
 function main () {
