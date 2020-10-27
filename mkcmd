@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.17
+readonly VERSION=1.0.19
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -34,6 +34,10 @@ OPT_ENABLE_DB_SSL=false
 OPT_PASSWORD_FILE=
 
 OPT_MAKE_TARBALL=
+
+OPT_REMOTE_USER=root
+OPT_DROPLET_NAME=
+OPT_DROPLET_ADDRESS=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -64,7 +68,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hdvN:D:R:C:O:P:sST --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hdvW:D:R:C:O:P:sSTN: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,droplet-name -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -77,7 +81,7 @@ function parse_arguments () {
       (-h|--help) OPT_HELP=true; shift ;;
       (-d|--debug) OPT_DEBUG=true; shift ;;
       (-v|--verbose) OPT_VERBOSE=true; shift ;;
-      (-N|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
+      (-W|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (-D|--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
       (-R|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
       (-C|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
@@ -86,6 +90,7 @@ function parse_arguments () {
       (-s|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-S|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
       (-T|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
+      (-N|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -125,6 +130,7 @@ OPTIONS:
   -s, --enable-wiki-ssl Enable wiki SSL (default: ${OPT_ENABLE_WIKI_SSL})
   -S, --enable-db-ssl   Enable database SSL (default: ${OPT_ENABLE_DB_SSL})
   -T, --make-tarball    Create a tarball of the input
+  -N, --droplet-name    Set the name of droplet to create
 EOF
   exit 0
 }
@@ -341,6 +347,32 @@ function create_tarball () {
   fi
 }
 
+function create_droplet () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_DROPLET_NAME}" ]]; then
+    OPT_DROPLET_ADDRESS=$(docmd -DCN "${OPT_DROPLET_NAME}")
+  fi
+}
+
+function upload_tarball () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_DROPLET_NAME}" && "${OPT_DROPLET_ADDRESS}" && \
+        -f "${OPT_WORK_DIR}.tar.gz" && -n "${OPT_REMOTE_USER}" ]]; then
+    rsync -avzP "${OPT_WORK_DIR}.tar.gz" "${OPT_REMOTE_USER}@${OPT_DROPLET_ADDRESS}:"
+  fi
+}
+
+function remote_install () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
+    ssh "${OPT_REMOTE_USER}@${OPT_DROPLET_ADDRESS}" \
+        "tar -C /var -xf ${OPT_WORK_DIR}.tar.gz; bash /var/miki/bin/install.sh"
+  fi
+}
+
 function main () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -358,14 +390,15 @@ function main () {
   update_package_json
 
   create_password_file
-
   create_config_yml
   create_init_sql
-
   copy_bin
-
   delete_password_file
+
   create_tarball "$@"
+  create_droplet
+  upload_tarball
+  remote_install
 }
 
 main "$@"

@@ -105,7 +105,6 @@ function install_miki_service () {
   debug ${FUNCNAME[0]} "$@"
 
   cp "${SELF_DIR}/miki.service" /etc/systemd/system
-  chmod root:root /etc/systemd/system/miki.service
 }
 
 function start_miki_service () {
