@@ -10,7 +10,7 @@ MAKEFLAGS += --no-builtin-rules
 .PHONY: all build
 
 DIR := $(shell basename "$(shell pwd)")
-NAME = miki
+NAME = mkcmd
 DOCKERFILE = ./Dockerfile
 
 ifndef SSH_PRIVATE_KEY
