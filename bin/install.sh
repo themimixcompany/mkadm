@@ -111,7 +111,21 @@ function start_miki_service () {
   debug ${FUNCNAME[0]} "$@"
 
   systemctl daemon-reload
-  systemctl start miki
+  systemctl start miki.service
+}
+
+function stop_miki_service () {
+  debug ${FUNCNAME[0]} "$@"
+
+  systemctl stop miki.service
+}
+
+function restore_database () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -f "/var/miki/dat/init.pg" ]]; then
+    /var/miki/bin/pgcmd -C /var/miki/config.yml -I /var/miki/dat/init.pg
+  fi
 }
 
 function main () {
@@ -123,6 +137,11 @@ function main () {
   install_node_js
   install_postgres
   install_miki_service
+
+  start_miki_service
+  stop_miki_service
+
+  restore_database
   start_miki_service
 }
 
