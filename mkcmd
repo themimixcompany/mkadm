@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.22
+readonly VERSION=1.0.23
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -361,8 +361,15 @@ EOF
 function copy_bin () {
   debug ${FUNCNAME[0]} "$@"
 
-  cp -a "${SELF_DIR}/bin" .
+  rsync -aL "${SELF_DIR}/bin" .
 }
+
+function copy_dat () {
+  debug ${FUNCNAME[0]} "$@"
+
+  rsync -aL "${SELF_DIR}/dat" .
+}
+
 
 function create_tarball () {
   debug ${FUNCNAME[0]} "$@"
@@ -440,7 +447,10 @@ function main () {
   create_password_file
   create_config_yml
   create_init_sql
+
   copy_bin
+  copy_dat
+
   delete_password_file
 
   create_tarball
