@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.21
+readonly VERSION=1.0.22
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -43,6 +43,9 @@ OPT_DROPLET_USER=root
 OPT_DROPLET_NAME=
 OPT_DROPLET_ADDRESS=
 
+OPT_DATABASE_NAME=defaultdb
+OPT_DATABASE_USER=doadmin
+
 OPT_FIREWALL_NAME=
 OPT_FIREWALL_ADDRESSES=
 OPT_FIREWALL_PORTS=
@@ -76,7 +79,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hdvW:D:R:C:O:V:sSTIK:N:F:A:P: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,droplet-install,ssh-key:,droplet-name:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hdvW:D:R:C:O:V:sSTIK:N:Z:U:F:A:P: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,droplet-install,ssh-key:,droplet-name:,database-name:,database-user:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -104,6 +107,8 @@ function parse_arguments () {
       (-F|--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
       (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
+      (-Z|--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
+      (-U|--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -151,6 +156,8 @@ OPTIONS:
   -F, --firewall-name      Set the name of firewall for this droplet
   -A, --firewall-addresses A comma-separated list of IP addresses to allow on the droplet
   -P, --firewall-ports     A comma-separated list of allowed ports on the droplet
+  -Z, --database-name      Specify the name of the database
+  -U, --database-user      Specify the name of the database user
 EOF
   exit 0
 }
@@ -295,9 +302,9 @@ db:
   type: postgres
   host: localhost
   port: 5432
-  user: miki
+  user: ${OPT_DATABASE_USER}
   pass: $(cat ${OPT_PASSWORD_FILE})
-  db: mikidb
+  db: ${OPT_DATABASE_NAME}
   ssl: ${OPT_ENABLE_DB_SSL}
   sslOptions:
     auto: true
@@ -345,9 +352,9 @@ function create_init_sql () {
 
   mkdir -p sql
   cat << EOF > sql/init.sql
-CREATE database mikidb;
-CREATE user miki password '$(cat ${OPT_PASSWORD_FILE})';
-GRANT ALL PRIVILEGES ON DATABASE mikidb TO miki;
+CREATE database defaultdb;
+CREATE user ${OPT_DATABASE_USER} password '$(cat ${OPT_PASSWORD_FILE})';
+GRANT ALL PRIVILEGES ON DATABASE ${OPT_DATABASE_NAME} TO ${OPT_DATABASE_USER};
 EOF
 }
 
@@ -411,7 +418,7 @@ function display_address () {
   debug ${FUNCNAME[0]} "$@"
 
   echo "http://${OPT_DROPLET_ADDRESS}"
-  echo -n "http://${OPT_DROPLET_ADDRESS}" | xsel -b
+  echo -n "${OPT_DROPLET_ADDRESS}" | xsel -b
 }
 
 function main () {
