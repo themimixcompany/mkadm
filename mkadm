@@ -3,10 +3,10 @@
 set -eu
 set -o pipefail
 
-readonly SELF=$(basename "${BASH_SOURCE[0]}")
-readonly SELF_DIR="$(cd $(dirname ${BASH_SOURCE[0]}) >/dev/null 2>&1 && pwd)"
+readonly SELF="$(basename ${BASH_SOURCE[0]})"
+readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.25
+readonly VERSION=1.0.26
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -117,13 +117,15 @@ function parse_arguments () {
     esac
   done
 
-  OPT_WORK_DIRECTORY="${@: -1}"
+  OPT_WORK_DIRECTORY="$(readlink -f ${@: -1})"
 }
 
 function process_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_HELP}" || "${#}" -lt 1 ]]; then
+    display_usage
+  elif [[ ! "$(basename ${OPT_WORK_DIRECTORY})" == "miki" ]]; then
     display_usage
   elif [[ -z "${OPT_WIKI_NAME}" || -z "${OPT_WIKI_DOMAIN}" || -z "${OPT_WIKI_RESOURCES}" || -z "${OPT_COMPANY_NAME}" || -z "${OPT_COMPANY_DOMAIN}" ]]; then
     display_usage
@@ -173,7 +175,7 @@ function initialize () {
 
   pushd "${OPT_WORK_DIRECTORY}" &> /dev/null
 
-  if [[ -e "package.json" && "$(jq '.name' package.json)" == \"wiki\" ]]; then
+  if [[ -f "package.json" && "$(jq -r '.name' package.json)" == "wiki" ]]; then
     return 0
   else
     error "!"
@@ -347,12 +349,6 @@ function delete_password_file () {
   rm -f "${OPT_PASSWORD_FILE}"
 }
 
-function delete_tarball () {
-  debug ${FUNCNAME[0]} "$@"
-
-  rm -f "${OPT_WORK_DIRECTORY}.tar.gz"
-}
-
 function create_init_sql () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -374,10 +370,14 @@ function copy_bin () {
 function create_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
+  local file=$(basename ${OPT_WORK_DIRECTORY}).tar.gz
+
   popd &> /dev/null
 
   if [[ -n "${OPT_MAKE_TARBALL}" ]]; then
-    tar -czf "${OPT_WORK_DIRECTORY}.tar.gz" --exclude ".git" "${OPT_WORK_DIRECTORY}"
+    tar -C "$(dirname ${OPT_WORK_DIRECTORY})" \
+        -czf "${file}" --exclude ".git" \
+        "$(basename ${OPT_WORK_DIRECTORY})"
   fi
 }
 
@@ -403,14 +403,25 @@ function droplet_ok () {
 function upload_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
+  local file="$(basename ${OPT_WORK_DIRECTORY}).tar.gz"
+
   sleep "${OPT_SLEEP}"
 
   if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok && \
-     [[ -f "${OPT_WORK_DIRECTORY}.tar.gz" && -n "${OPT_DROPLET_USER}" ]]; then
+     [[ -f "${file}" && -n "${OPT_DROPLET_USER}" ]]; then
     scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
-        "${OPT_WORK_DIRECTORY}.tar.gz" \
+        "${file}" \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
   fi
+}
+
+function delete_tarball () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local directory="$(dirname ${OPT_WORK_DIRECTORY})"
+  local file="$(basename ${OPT_WORK_DIRECTORY}).tar.gz"
+
+  rm -f "${directory}/${file}"
 }
 
 function upload_database_init () {
@@ -425,10 +436,12 @@ function upload_database_init () {
 function install_miki () {
   debug ${FUNCNAME[0]} "$@"
 
+  local file="$(basename ${OPT_WORK_DIRECTORY}).tar.gz"
+
   if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok; then
     ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" \
-        "tar -C /var -xf ${OPT_WORK_DIRECTORY}.tar.gz; \
+        "tar -C /var -xf ${file}; \
          bash ${OPT_INSTALL_DIRECTORY}/bin/install -i ${OPT_INSTALL_DIRECTORY} -I /tmp/${OPT_DATABASE_INIT}"
   fi
 
@@ -457,8 +470,7 @@ function main () {
   parse_arguments "$@"
   process_arguments "$@"
 
-  initialize "$@"
-
+  initialize
   reset_repository
   delete_files
   create_readme
@@ -478,6 +490,8 @@ function main () {
   create_droplet
 
   upload_tarball
+  delete_tarball
+
   upload_database_init
 
   install_miki
