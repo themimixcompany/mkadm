@@ -121,7 +121,9 @@ function initialize_database () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_DATABASE_INIT}" && -f "${OPT_DATABASE_INIT}" ]]; then
-    "${OPT_INSTALL_DIRECTORY}/bin/pgadm" -C "${OPT_INSTALL_DIRECTORY}/config.yml" -I "${OPT_DATABASE_INIT}" || true
+    "${OPT_INSTALL_DIRECTORY}/bin/pgadm" \
+      -C "${OPT_INSTALL_DIRECTORY}/config.yml" \
+      -I "${OPT_DATABASE_INIT}" || true
     rm -f "${OPT_DATABASE_INIT}"
   fi
 }
