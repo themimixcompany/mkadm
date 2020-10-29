@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF=$(basename "${BASH_SOURCE[0]}")
 readonly SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.0.23
+readonly VERSION=1.0.25
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -14,19 +14,20 @@ OPT_HELP=
 OPT_DEBUG=
 OPT_VERBOSE=
 
+OPT_SLEEP=15
 OPT_RESOURCES_DIR=${SELF_DIR}/resources
 OPT_ASSETS_DIR=${OPT_RESOURCES_DIR}/assets
 
 OPT_WIKI_NAME=
 OPT_WIKI_DOMAIN=
-OPT_WIKI_RESOURCES=
+OPT_WIKI_RESOURCES=/_assets/svg
+
 OPT_COMPANY_NAME=
 OPT_COMPANY_DOMAIN=
 
 OPT_DEFAULT_PACKAGE_VERSION=1.0.0
 OPT_PACKAGE_VERSION=
 
-OPT_WORK_DIR=
 OPT_BASE_COMMIT=12cb810791b18188a53fbbd9ed433acc51a14983
 
 OPT_ENABLE_WIKI_SSL=false
@@ -34,21 +35,22 @@ OPT_ENABLE_DB_SSL=false
 OPT_PASSWORD_FILE=
 
 OPT_MAKE_TARBALL=
+OPT_INSTALL_DIRECTORY=/var/miki
 
-OPT_SSH_OPTIONS="-o StrictHostKeyChecking=no -o LogLevel=ERROR"
 OPT_SSH_KEY=
-
-OPT_DROPLET_INSTALL=
 OPT_DROPLET_USER=root
 OPT_DROPLET_NAME=
 OPT_DROPLET_ADDRESS=
 
 OPT_DATABASE_NAME=defaultdb
 OPT_DATABASE_USER=doadmin
+OPT_DATABASE_INIT=
 
 OPT_FIREWALL_NAME=
 OPT_FIREWALL_ADDRESSES=
-OPT_FIREWALL_PORTS=
+OPT_FIREWALL_PORTS="22,80,443"
+
+OPT_WORK_DIRECTORY=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -79,7 +81,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hdvW:D:R:C:O:V:sSTIK:N:Z:U:F:A:P: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,droplet-install,ssh-key:,droplet-name:,database-name:,database-user:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hvw:d:r:c:o:V:sSti:k:D:B:U:I:F:A:P: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,install-directory:,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -90,31 +92,32 @@ function parse_arguments () {
   while true; do
     case "$1" in
       (-h|--help) OPT_HELP=true; shift ;;
-      (-d|--debug) OPT_DEBUG=true; shift ;;
+      (--debug) OPT_DEBUG=true; shift ;;
       (-v|--verbose) OPT_VERBOSE=true; shift ;;
-      (-W|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
-      (-D|--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
-      (-R|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
-      (-C|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
-      (-O|--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
+      (-w|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
+      (-d|--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
+      (-r|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
+      (-c|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
+      (-o|--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
       (-V|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
       (-s|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-S|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
-      (-T|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
-      (-I|--droplet-install) OPT_DROPLET_INSTALL=true; shift ;;
-      (-K|--ssh-key) OPT_SSH_KEY=$2; shift 2 ;;
-      (-N|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
+      (-t|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
+      (-i|--install-directory) OPT_INSTALL_DIRECTORY=$2; shift 2 ;;
+      (-k|--ssh-key) OPT_SSH_KEY=$2; shift 2 ;;
+      (-D|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
+      (-B|--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
+      (-U|--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
+      (-I|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
       (-F|--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
       (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
-      (-Z|--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
-      (-U|--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
   done
 
-  OPT_WORK_DIR="${@: -1}"
+  OPT_WORK_DIRECTORY="${@: -1}"
 }
 
 function process_arguments () {
@@ -124,7 +127,9 @@ function process_arguments () {
     display_usage
   elif [[ -z "${OPT_WIKI_NAME}" || -z "${OPT_WIKI_DOMAIN}" || -z "${OPT_WIKI_RESOURCES}" || -z "${OPT_COMPANY_NAME}" || -z "${OPT_COMPANY_DOMAIN}" ]]; then
     display_usage
-  elif [[ -n "${OPT_DROPLET_INSTALL}" && -z "${OPT_SSH_KEY}" ]]; then
+  elif [[ -n "${OPT_INSTALL_DIRECTORY}" && -z "${OPT_SSH_KEY}" ]]; then
+    display_usage
+  elif [[ -z "${OPT_INSTALL_DIRECTORY}" ]]; then
     display_usage
   else
     return 0
@@ -141,23 +146,24 @@ OPTIONS:
   -h, --help               Show this help
   -d, --debug              Enable debugging mode
   -v, --verbose            Enable verbose output
-  -N, --wiki-name          Set wiki name
-  -D, --wiki-domain        Set wiki domain
-  -R, --wiki-resources     Set location of wiki resources
-  -C, --company-name       Set company name
-  -O, --company-domain     Set company domain
-  -P, --package-version    Set version in package.json
+  -w, --wiki-name          Set wiki name
+  -d, --wiki-domain        Set wiki domain
+  -r, --wiki-resources     Set location of wiki resources
+  -c, --company-name       Set company name
+  -o, --company-domain     Set company domain
+  -V, --package-version    Set version in package.json
   -s, --enable-wiki-ssl    Enable wiki SSL (default: ${OPT_ENABLE_WIKI_SSL})
   -S, --enable-db-ssl      Enable database SSL (default: ${OPT_ENABLE_DB_SSL})
-  -T, --make-tarball       Create a tarball of the input
-  -I, --droplet-install    Install on droplet
-  -K, --ssh-key            Specify the allowed SSH key for the droplet
-  -N, --droplet-name       Set the name of droplet to create
+  -t, --make-tarball       Create a tarball of the input
+  -i, --install-directory  Set the installation directory of Miki
+  -k, --ssh-key            Set the allowed SSH key for the droplet
+  -D, --droplet-name       Set the name of droplet to create
+  -B, --database-name      Set the name of the database
+  -U, --database-user      Set the name of the database user
+  -I, --database-init      Initialize the database with a dump
   -F, --firewall-name      Set the name of firewall for this droplet
   -A, --firewall-addresses A comma-separated list of IP addresses to allow on the droplet
   -P, --firewall-ports     A comma-separated list of allowed ports on the droplet
-  -Z, --database-name      Specify the name of the database
-  -U, --database-user      Specify the name of the database user
 EOF
   exit 0
 }
@@ -165,7 +171,7 @@ EOF
 function initialize () {
   debug ${FUNCNAME[0]} "$@"
 
-  pushd "${OPT_WORK_DIR}" &> /dev/null
+  pushd "${OPT_WORK_DIRECTORY}" &> /dev/null
 
   if [[ -e "package.json" && "$(jq '.name' package.json)" == \"wiki\" ]]; then
     return 0
@@ -344,7 +350,7 @@ function delete_password_file () {
 function delete_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
-  rm -f "${OPT_WORK_DIR}.tar.gz"
+  rm -f "${OPT_WORK_DIRECTORY}.tar.gz"
 }
 
 function create_init_sql () {
@@ -352,7 +358,7 @@ function create_init_sql () {
 
   mkdir -p sql
   cat << EOF > sql/init.sql
-CREATE database defaultdb;
+CREATE database ${OPT_DATABASE_NAME};
 CREATE user ${OPT_DATABASE_USER} password '$(cat ${OPT_PASSWORD_FILE})';
 GRANT ALL PRIVILEGES ON DATABASE ${OPT_DATABASE_NAME} TO ${OPT_DATABASE_USER};
 EOF
@@ -361,15 +367,9 @@ EOF
 function copy_bin () {
   debug ${FUNCNAME[0]} "$@"
 
+  rm -rf bin
   rsync -aL "${SELF_DIR}/bin" .
 }
-
-function copy_dat () {
-  debug ${FUNCNAME[0]} "$@"
-
-  rsync -aL "${SELF_DIR}/dat" .
-}
-
 
 function create_tarball () {
   debug ${FUNCNAME[0]} "$@"
@@ -377,46 +377,69 @@ function create_tarball () {
   popd &> /dev/null
 
   if [[ -n "${OPT_MAKE_TARBALL}" ]]; then
-    tar -czf "${OPT_WORK_DIR}.tar.gz" --exclude ".git" "${OPT_WORK_DIR}"
+    tar -czf "${OPT_WORK_DIRECTORY}.tar.gz" --exclude ".git" "${OPT_WORK_DIRECTORY}"
   fi
 }
 
 function create_droplet () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_DROPLET_INSTALL}" && -n "${OPT_DROPLET_NAME}" ]]; then
-    OPT_DROPLET_ADDRESS=$(docmd -K "${OPT_SSH_KEY}" -DCN "${OPT_DROPLET_NAME}")
+  if [[ -n "${OPT_INSTALL_DIRECTORY}" && -n "${OPT_DROPLET_NAME}" ]]; then
+    OPT_DROPLET_ADDRESS=$(doadm -DCN "${OPT_DROPLET_NAME}" -K "${OPT_SSH_KEY}" )
     echo "${OPT_DROPLET_ADDRESS}"
+  fi
+}
+
+function droplet_ok () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
+    return 0
+  else
+    return 1
   fi
 }
 
 function upload_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
-  sleep 15
-  if [[ -n "${OPT_DROPLET_INSTALL}" && -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" && \
-        -f "${OPT_WORK_DIR}.tar.gz" && -n "${OPT_DROPLET_USER}" ]]; then
+  sleep "${OPT_SLEEP}"
+
+  if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok && \
+     [[ -f "${OPT_WORK_DIRECTORY}.tar.gz" && -n "${OPT_DROPLET_USER}" ]]; then
     scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
-        "${OPT_WORK_DIR}.tar.gz" \
+        "${OPT_WORK_DIRECTORY}.tar.gz" \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
   fi
 }
 
-function droplet_install () {
+function upload_database_init () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_DROPLET_INSTALL}" && -n "${OPT_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
+  if [[ -n "${OPT_DATABASE_INIT}" ]]; then
+    scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
+        "${OPT_DATABASE_INIT}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/tmp"
+  fi
+}
+
+function install_miki () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok; then
     ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" \
-        "tar -C /var -xf ${OPT_WORK_DIR}.tar.gz; bash /var/miki/bin/install.sh"
+        "tar -C /var -xf ${OPT_WORK_DIRECTORY}.tar.gz; \
+         bash ${OPT_INSTALL_DIRECTORY}/bin/install -i ${OPT_INSTALL_DIRECTORY} -I /tmp/${OPT_DATABASE_INIT}"
   fi
+
+  return 0
 }
 
 function create_firewall () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_FIREWALL_NAME}" ]]; then
-    docmd -FCN "${OPT_FIREWALL_NAME}" -n "${OPT_DROPLET_NAME}" \
+    doadm -FCN "${OPT_FIREWALL_NAME}" -n "${OPT_DROPLET_NAME}" \
           -a "${OPT_FIREWALL_ADDRESSES}" -p "${OPT_FIREWALL_PORTS}"
   fi
 }
@@ -447,16 +470,17 @@ function main () {
   create_password_file
   create_config_yml
   create_init_sql
+  delete_password_file
 
   copy_bin
-  copy_dat
-
-  delete_password_file
 
   create_tarball
   create_droplet
+
   upload_tarball
-  droplet_install
+  upload_database_init
+
+  install_miki
 
   create_firewall
 
