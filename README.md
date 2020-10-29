@@ -16,7 +16,7 @@ mkadm
 <a name="overview">Overview</a>
 -------------------------------
 
-Scripts for creating Miki instances on DigitalOcean.
+Scripts for building, configuring, and installing Miki.
 
 
 <a name="dependencies">Dependencies</a>
