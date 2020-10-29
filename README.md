@@ -1,4 +1,4 @@
-mkcmd
+mkadm
 =====
 
 
@@ -22,7 +22,7 @@ Scripts for creating Miki instances on DigitalOcean.
 <a name="dependencies">Dependencies</a>
 ---------------------------------------
 
-- docmd
+- doadm
 
 
 <a name="usage">Usage</a>
@@ -32,7 +32,7 @@ Scripts for creating Miki instances on DigitalOcean.
 
 Before using this script, you must first authenticate with DigitalOcean. To do so, run:
 
-    docmd -I
+    doadm -I
 
 
 ### <a name="instances">Instances</a>
@@ -41,15 +41,21 @@ To create a Miki instance with the name `miki`, domain `miki.mimix.io`, specifyi
 resources at `/_assets/svg`, company name `miki`, company domain `mimix.io` installing it on a new
 droplet named `miki-www-1` giving SSH access to the preconfigured SSH key
 `6f:40:1c:47:98:d2:e8:03:05:e2:d2:f4:71:f3:ff:36` on the DO account, with a corresponding firewall
-named `miki-fw-1` allowing access only from `110.54.144.42`, and `73.6.24.189` on the ports
-`22`, `80`, and `443` from the input directory `miki` on the current working directory, run:
+named `miki-fw-1`, initializing the database with the contents of `init.pg`, allowing access only
+from `110.54.144.42`, and `73.6.24.189` on the ports `22`, `80`, and `443` from the input directory
+`miki` on the current working directory, run:
 
 ```bash
-mkcmd -W miki -D miki.mimix.io -R /_assets/svg \
--C miki -O mimix.io -T -I \
--K 6f:40:1c:47:98:d2:e8:03:05:e2:d2:f4:71:f3:ff:36 \
--N miki-www-1 \
--F miki-fw-1 -A 110.54.144.42,73.6.24.189 -P 22,80,443 \
+mkadm \
+-w miki -d miki.mimix.io -r /_assets/svg \
+-c miki -o mimix.io \
+-t -i /var/miki \
+-k 6f:40:1c:47:98:d2:e8:03:05:e2:d2:f4:71:f3:ff:36 \
+-D miki-www-1 \
+-I init.pg \
+-F miki-fw-1 \
+-A 110.54.144.42,73.6.24.189 \
+-P 22,80,443 \
 miki
 ```
 
@@ -57,4 +63,4 @@ miki
 
 To display usage summary, run:
 
-    mkcmd --help
+    mdadm --help

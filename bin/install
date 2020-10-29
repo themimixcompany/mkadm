@@ -13,6 +13,10 @@ OPT_HELP=
 OPT_DEBUG=
 OPT_VERBOSE=
 
+OPT_SLEEP=15
+OPT_INSTALL_DIRECTORY=/var/miki
+OPT_DATABASE_INIT=
+
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
     echo "error: ${@}" >&2
@@ -42,7 +46,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hdv --longoptions help,debug,verbose -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hdvs:i:I: --longoptions help,debug,verbose,sleep:,install-directory:,database-init: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -53,8 +57,11 @@ function parse_arguments () {
   while true; do
     case "$1" in
       (-h|--help) OPT_HELP=true; shift ;;
-      (-d|--debug) OPT_DEBUG=true; shift ;;
+      (--debug) OPT_DEBUG=true; shift ;;
       (-v|--verbose) OPT_VERBOSE=true; shift ;;
+      (-s|--sleep) OPT_SLEEP=$2; shift 2 ;;
+      (-i|--install-directory) OPT_INSTALL_DIRECTORY=$2; shift 2 ;;
+      (-I|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -80,9 +87,12 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-  -h, --help            Show this help
-  -d, --debug           Enable debugging mode
-  -v, --verbose         Enable verbose output
+  -h, --help              Show this help
+  -d, --debug             Enable debugging mode
+  -v, --verbose           Enable verbose output
+  -s, --sleep             Set the sleep time
+  -i, --install-directory The directory to install miki on
+  -I, --database-init     Initialize the database with a dump
 EOF
   exit 0
 }
@@ -91,14 +101,14 @@ function install_node_js () {
   debug ${FUNCNAME[0]} "$@"
 
   curl -sL https://deb.nodesource.com/setup_15.x | sudo -E bash -
-  apt-get install -y nodejs build-essential
+  apt-get install -y nodejs build-essential software-properties-common
 }
 
 function install_postgres () {
   debug ${FUNCNAME[0]} "$@"
 
   apt-get install -y postgresql postgresql-contrib
-  sudo -u postgres psql --file=/var/miki/sql/init.sql
+  sudo -u postgres psql --file="${OPT_INSTALL_DIRECTORY}/sql/init.sql"
 }
 
 function install_miki_service () {
@@ -107,25 +117,28 @@ function install_miki_service () {
   cp "${SELF_DIR}/miki.service" /etc/systemd/system
 }
 
+function initialize_database () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_DATABASE_INIT}" && -f "${OPT_DATABASE_INIT}" ]]; then
+    "${OPT_INSTALL_DIRECTORY}/bin/pgadm" -C "${OPT_INSTALL_DIRECTORY}/config.yml" -I "${OPT_DATABASE_INIT}" || true
+    rm -f "${OPT_DATABASE_INIT}"
+  fi
+}
+
 function start_miki_service () {
   debug ${FUNCNAME[0]} "$@"
 
   systemctl daemon-reload
   systemctl start miki.service
+  sleep "${OPT_SLEEP}"
 }
 
 function stop_miki_service () {
   debug ${FUNCNAME[0]} "$@"
 
   systemctl stop miki.service
-}
-
-function restore_database () {
-  debug ${FUNCNAME[0]} "$@"
-
-  if [[ -f "/var/miki/dat/init.pg" ]]; then
-    /var/miki/bin/pgcmd -C /var/miki/config.yml -I /var/miki/dat/init.pg
-  fi
+  sleep "${OPT_SLEEP}"
 }
 
 function main () {
@@ -138,10 +151,7 @@ function main () {
   install_postgres
   install_miki_service
 
-  start_miki_service
-  stop_miki_service
-
-  restore_database
+  initialize_database
   start_miki_service
 }
 
