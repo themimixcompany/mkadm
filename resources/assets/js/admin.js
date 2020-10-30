@@ -1,4 +1,4 @@
-/*! Miki - miki.mimix.io - Licensed under AGPL */
+/*! Wiki.js - wiki.js.org - Licensed under AGPL */
 (this.webpackJsonp = this.webpackJsonp || []).push([
     ["admin"], {
         "./client/components/admin.vue": function(e, t, n) {
