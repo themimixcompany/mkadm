@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.1.1
+readonly VERSION=1.1.2
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -24,7 +24,7 @@ OPT_WIKI_RESOURCES=/_assets/svg
 OPT_COMPANY_NAME=
 OPT_COMPANY_DOMAIN=
 
-OPT_DEFAULT_PACKAGE_VERSION=1.0.0
+OPT_DEFAULT_PACKAGE_VERSION="1.0.0"
 OPT_PACKAGE_VERSION=
 
 OPT_BASE_COMMIT="2.5.159"
@@ -182,7 +182,7 @@ function initialize () {
 function reset_repository () {
   debug ${FUNCNAME[0]} "$@"
 
-  git reset --hard "${OPT_BASE_COMMIT}" &> /dev/null
+  git reset --hard "${OPT_BASE_COMMIT}"
 }
 
 function delete_files () {
@@ -209,6 +209,35 @@ function create_readme () {
 
   cat << EOF > README.md
 # miki
+EOF
+}
+
+function create_local_config_yml () {
+  debug ${FUNCNAME[0]} "$@"
+
+  cat << EOF > config.yml
+port: 3000
+
+db:
+  type: sqlite
+  storage: db/db.sqlite
+
+ssl:
+  enabled: false
+
+pool:
+  # min: 2
+  # max: 10
+
+bindIP: 0.0.0.0
+
+logLevel: info
+
+offline: false
+
+ha: false
+
+dataPath: ./data
 EOF
 }
 
@@ -271,6 +300,10 @@ function update_package_json () {
 function yarn_build () {
   debug ${FUNCNAME[0]} "$@"
 
+  echo "================================================================================"
+  echo " Compiling sources ..."
+  echo "================================================================================"
+
   yarn build
 }
 
@@ -303,7 +336,7 @@ function create_password_file () {
   echo $(create_password) > "${OPT_PASSWORD_FILE}"
 }
 
-function create_config_yml () {
+function create_remote_config_yml () {
   debug ${FUNCNAME[0]} "$@"
 
   cat << EOF > config.yml
@@ -477,6 +510,7 @@ function local_install () {
   reset_repository
   delete_files
   create_readme
+  create_local_config_yml
 
   copy_vue_files
   update_files
@@ -494,7 +528,7 @@ function remote_install () {
         -n "${OPT_DROPLET_NAME}" && \
         -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
     create_password_file
-    create_config_yml
+    create_remote_config_yml
     create_init_sql
     delete_password_file
 
