@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.1.2
+readonly VERSION=1.1.3
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -34,6 +34,7 @@ OPT_ENABLE_DB_SSL=false
 OPT_PASSWORD_FILE=
 
 OPT_MAKE_TARBALL=
+OPT_PGADM=
 OPT_INSTALL_DIRECTORY=
 
 OPT_SSH_KEY=
@@ -80,7 +81,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hvw:d:r:c:o:V:sSti:k:D:B:U:I:F:A:P: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,install-directory:,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hvw:d:r:c:o:V:sStp:i:k:D:B:U:I:F:A:P: --longoptions help,debug,verbose,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,pgadm:,install-directory:,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -102,6 +103,7 @@ function parse_arguments () {
       (-s|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-S|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
       (-t|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
+      (-p|--pgadm) OPT_PGADM=$2; shift 2 ;;
       (-i|--install-directory) OPT_MAKE_TARBALL=true; OPT_INSTALL_DIRECTORY=$2; shift 2 ;;
       (-k|--ssh-key) OPT_SSH_KEY=$2; shift 2 ;;
       (-D|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
@@ -154,6 +156,7 @@ OPTIONS:
   -s, --enable-wiki-ssl    Enable wiki SSL (default: ${OPT_ENABLE_WIKI_SSL})
   -S, --enable-db-ssl      Enable database SSL (default: ${OPT_ENABLE_DB_SSL})
   -t, --make-tarball       Create a tarball of the input
+  -p, --pgadm              Specify the pgadmn program to upload
   -i, --install-directory  Set the installation directory of Miki
   -k, --ssh-key            Set the allowed SSH key for the droplet
   -D, --droplet-name       Set the name of droplet to create
@@ -469,6 +472,15 @@ function upload_database_init () {
   fi
 }
 
+function upload_pgadm () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok; then
+    scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
+        "${OPT_PGADM}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
+  fi
+}
+
 function install_miki () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -539,6 +551,7 @@ function remote_install () {
     delete_tarball
 
     upload_database_init
+    upload_pgadm
     install_miki
     create_firewall
 
