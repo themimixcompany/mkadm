@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.1.0
+readonly VERSION=1.1.1
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -102,7 +102,7 @@ function parse_arguments () {
       (-s|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-S|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
       (-t|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
-      (-i|--install-directory) OPT_INSTALL_DIRECTORY=$2; shift 2 ;;
+      (-i|--install-directory) OPT_MAKE_TARBALL=true; OPT_INSTALL_DIRECTORY=$2; shift 2 ;;
       (-k|--ssh-key) OPT_SSH_KEY=$2; shift 2 ;;
       (-D|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
       (-B|--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
