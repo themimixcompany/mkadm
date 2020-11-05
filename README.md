@@ -58,4 +58,4 @@ miki
 
 To display usage summary, run:
 
-    mdadm --help
+    mkadm --help
