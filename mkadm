@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.1.4
+readonly VERSION=1.1.5
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -512,10 +512,6 @@ function display_address () {
   echo "================================================================================"
   echo " Your new Miki instance is now available at http://${OPT_DROPLET_ADDRESS}."
   echo "================================================================================"
-
-  if which xsel &> /dev/null; then
-    echo -n "${OPT_DROPLET_ADDRESS}" | xsel -b
-  fi
 }
 
 function local_install () {
