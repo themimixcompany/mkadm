@@ -45,17 +45,12 @@ named `miki-fw-1`, initializing the database with the contents of `init.pg`, all
 from `110.54.144.42`, and `73.6.24.189` on the ports `22`, `80`, and `443` from the input directory
 `miki` on the current working directory, run:
 
-```bash
-mkadm \
--w miki -d miki.mimix.io -r /_assets/svg \
--c miki -o mimix.io \
--t -i /var/miki \
+```
+mkadm -w miki -d miki.mimix.io -r /_assets/svg -c miki -o mimix.io \
+-p $(which pgadm) -i /var/miki \
 -k 6f:40:1c:47:98:d2:e8:03:05:e2:d2:f4:71:f3:ff:36 \
--D miki-www-1 \
--I init.pg \
--F miki-fw-1 \
--A 110.54.144.42,73.6.24.189 \
--P 22,80,443 \
+-D miki-www-1 -B defaultdb -U doadmin -I init.pg \
+-F miki-fw-1 -A 110.54.144.42,73.6.24.189 -P 22,80,443 \
 miki
 ```
 

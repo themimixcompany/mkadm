@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.1.5
+readonly VERSION=1.1.6
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -485,12 +485,18 @@ function install_miki () {
   debug ${FUNCNAME[0]} "$@"
 
   local file="$(basename ${OPT_WORK_DIRECTORY}).tar.gz"
+  local base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_DIRECTORY}/bin/install -i ${OPT_INSTALL_DIRECTORY}"
+  local cmd=
+
+  if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok && [[ -n "${OPT_DATABASE_INIT}" ]]; then
+    cmd="${base_cmd} -I /tmp/${OPT_DATABASE_INIT}"
+  else
+    cmd="${base_cmd}"
+  fi
 
   if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok; then
     ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
-        "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" \
-        "tar -C /var -xf ${file}; \
-         bash ${OPT_INSTALL_DIRECTORY}/bin/install -i ${OPT_INSTALL_DIRECTORY} -I /tmp/${OPT_DATABASE_INIT}"
+        "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" "${cmd}"
   fi
 
   return 0
