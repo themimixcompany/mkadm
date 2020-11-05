@@ -107,7 +107,7 @@ function install_node_js () {
 function install_postgres () {
   debug ${FUNCNAME[0]} "$@"
 
-  apt-get install -y postgresql postgresql-contrib
+  apt-get install -y postgresql postgresql-contrib postgresql-client-common
   sudo -u postgres psql --file="${OPT_INSTALL_DIRECTORY}/sql/init.sql"
 }
 
@@ -120,7 +120,7 @@ function install_miki_service () {
 function initialize_database () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_DATABASE_INIT}" && -f "${OPT_DATABASE_INIT}" ]]; then
+  if [[ -f "${OPT_DATABASE_INIT}" ]]; then
     "/usr/local/bin/pgadm" \
       -C "${OPT_INSTALL_DIRECTORY}/config.yml" \
       -I "${OPT_DATABASE_INIT}" || true
