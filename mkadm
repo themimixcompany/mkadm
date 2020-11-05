@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.1.6
+readonly VERSION=1.1.7
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -489,7 +489,7 @@ function install_miki () {
   local cmd=
 
   if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok && [[ -n "${OPT_DATABASE_INIT}" ]]; then
-    cmd="${base_cmd} -I /tmp/${OPT_DATABASE_INIT}"
+    cmd="${base_cmd} -I /tmp/$(basename ${OPT_DATABASE_INIT})"
   else
     cmd="${base_cmd}"
   fi
