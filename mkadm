@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.1.7
+readonly VERSION=1.1.8
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -364,7 +364,7 @@ ssl:
   port: 443
   provider: letsencrypt
   domain: ${OPT_WIKI_DOMAIN}
-  subscriberEmail: rom@mimix.io
+  subscriberEmail: david@mimix.io
 
 pool:
   # min: 2
@@ -506,8 +506,8 @@ function create_firewall () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_FIREWALL_NAME}" ]]; then
-    doadm -FCN "${OPT_FIREWALL_NAME}" -n "${OPT_DROPLET_NAME}" \
-          -a "${OPT_FIREWALL_ADDRESSES}" -p "${OPT_FIREWALL_PORTS}"
+    doadm -FCN "${OPT_FIREWALL_NAME}" -a "${OPT_DROPLET_NAME}" \
+          -A "${OPT_FIREWALL_ADDRESSES}" -P "${OPT_FIREWALL_PORTS}"
   fi
 }
 
