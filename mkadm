@@ -21,8 +21,8 @@ OPT_WIKI_NAME=
 OPT_WIKI_DOMAIN=
 OPT_WIKI_RESOURCES=/_assets/svg
 
-OPT_COMPANY_NAME=
-OPT_COMPANY_DOMAIN=
+OPT_COMPANY_NAME=miki
+OPT_COMPANY_DOMAIN=mimix.io
 
 OPT_DEFAULT_PACKAGE_VERSION="1.0.0"
 OPT_PACKAGE_VERSION=
@@ -109,7 +109,7 @@ function parse_arguments () {
       (-D|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
       (-B|--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
       (-U|--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
-      (-I|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
+      (-I|--database-init) OPT_DATABASE_INIT=$2; OPT_PGADM=$(which pgadm) ; shift 2 ;;
       (-F|--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
       (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
@@ -265,9 +265,9 @@ function update_files () {
   declare -A SUBSTITUTIONS=(
     ['wikijs-butterfly.svg']="${OPT_COMPANY_NAME}.svg"
 
-    ['wiki\.js']="${OPT_WIKI_NAME}"
-    ['wiki-js']="${OPT_WIKI_NAME}"
-    ['wikijs']="${OPT_WIKI_NAME}"
+    ['wiki\.js']="${OPT_WIKI_NAME,,}"
+    ['wiki-js']="${OPT_WIKI_NAME,,}"
+    ['wikijs']="${OPT_WIKI_NAME,,}"
     ['Wiki\.js']="${OPT_WIKI_NAME^}"
     ['WIKI\.js']="${OPT_WIKI_NAME^}"
 
