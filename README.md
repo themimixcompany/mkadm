@@ -22,7 +22,7 @@ Scripts for building, configuring, and installing Miki.
 <a name="dependencies">Dependencies</a>
 ---------------------------------------
 
-- doadm
+- [doadm](https://github.com/themimixcompany/doadm)
 
 
 <a name="usage">Usage</a>
