@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.1.8
+readonly VERSION=1.1.9
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -447,7 +447,7 @@ function upload_tarball () {
   sleep "${OPT_SLEEP}"
 
   if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok && \
-     [[ -f "${file}" && -n "${OPT_DROPLET_USER}" ]]; then
+       [[ -f "${file}" && -n "${OPT_DROPLET_USER}" ]]; then
     scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${file}" \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
@@ -475,7 +475,7 @@ function upload_database_init () {
 function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok; then
+  if [[ -n "${OPT_INSTALL_DIRECTORY}" && -n "${OPT_DATABASE_INIT}" ]] && droplet_ok; then
     scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_PGADM}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
   fi
@@ -542,8 +542,8 @@ function remote_install () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_INSTALL_DIRECTORY}" && -n "${OPT_SSH_KEY}" && \
-        -n "${OPT_DROPLET_NAME}" && \
-        -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
+          -n "${OPT_DROPLET_NAME}" && \
+          -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
     create_password_file
     create_remote_config_yml
     create_init_sql
