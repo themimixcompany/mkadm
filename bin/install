@@ -97,6 +97,12 @@ EOF
   exit 0
 }
 
+function extract_tarball () {
+  debug ${FUNCNAME[0]} "$@"
+
+  tar -C /var -xf miki.tar.gz
+}
+
 function install_node_js () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -109,6 +115,13 @@ function install_postgres () {
 
   apt-get install -y postgresql postgresql-contrib postgresql-client-common
   sudo -u postgres psql --file="${OPT_INSTALL_DIRECTORY}/sql/init.sql"
+}
+
+function install_tools () {
+  debug ${FUNCNAME[0]} "$@"
+
+  apt-get install -y jq
+  snap install yq
 }
 
 function install_miki_service () {
@@ -133,14 +146,12 @@ function start_miki_service () {
 
   systemctl daemon-reload
   systemctl start miki.service
-  sleep "${OPT_SLEEP}"
 }
 
 function stop_miki_service () {
   debug ${FUNCNAME[0]} "$@"
 
   systemctl stop miki.service
-  sleep "${OPT_SLEEP}"
 }
 
 function main () {
@@ -151,6 +162,7 @@ function main () {
 
   install_node_js
   install_postgres
+  install_tools
   install_miki_service
 
   initialize_database
