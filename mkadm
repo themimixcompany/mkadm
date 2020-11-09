@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.2.1
+readonly VERSION=1.2.2
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -43,9 +43,10 @@ OPT_ENABLE_WIKI_SSL=false
 OPT_ENABLE_DB_SSL=false
 OPT_PASSWORD_FILE=
 
-OPT_MAKE_TARBALL=
+OPT_CREATE_TARBALL=
 OPT_PGADM=
-OPT_INSTALL_DIRECTORY=/var/miki
+OPT_INSTALL_LOCATION=/var/miki
+OPT_INSTALL_REMOTELY=
 
 OPT_SSH_KEYS=
 OPT_REMOVE_SELF_SSH_KEY=
@@ -91,7 +92,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hvn:m:w:d:r:c:o:V:sStp:i:Kk:D:B:U:I:F:A:P: --longoptions help,debug,verbose,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,make-tarball,pgadm:,install-directory:,remove-self-ssh-key,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hvn:m:w:d:r:c:o:V:sStp:l:iKk:D:B:U:I:F:A:P: --longoptions help,debug,verbose,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm:,install-location:,install-remotely,remove-self-ssh-key,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -114,9 +115,10 @@ function parse_arguments () {
       (-V|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
       (-s|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-S|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
-      (-t|--make-tarball) OPT_MAKE_TARBALL=true; shift ;;
+      (-t|--create-tarball) OPT_CREATE_TARBALL=true; shift ;;
       (-p|--pgadm) OPT_PGADM=$2; shift 2 ;;
-      (-i|--install-directory) OPT_MAKE_TARBALL=true; OPT_INSTALL_DIRECTORY=$2; shift 2 ;;
+      (-l|--install-location) OPT_MAKE_TARBALL=true; OPT_INSTALL_LOCATION=$2; shift 2 ;;
+      (-i|--install-remotely) OPT_MAKE_TARBALL=true; OPT_INSTALL_REMOTELY=true; shift ;;
       (-K|--remove-self-ssh-key) OPT_REMOVE_SELF_SSH_KEY=true; shift ;;
       (-k|--ssh-key) OPT_SSH_KEYS=$2; shift 2 ;;
       (-D|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
@@ -165,7 +167,7 @@ OPTIONS:
   -V, --package-version      Set version in package.json
   -s, --enable-wiki-ssl      Enable wiki SSL (default: ${OPT_ENABLE_WIKI_SSL})
   -S, --enable-db-ssl        Enable database SSL (default: ${OPT_ENABLE_DB_SSL})
-  -t, --make-tarball         Create a tarball of the input
+  -t, --create-tarball         Create a tarball of the input
   -p, --pgadm                Specify the pgadmn program to upload
   -i, --install-directory    Set the installation directory of Miki
   -K, --remove-self-ssh-key  Remove the SSH key of the host from the allowed droplet SSH keys
@@ -282,10 +284,6 @@ db:
 
 ssl:
   enabled: false
-
-pool:
-  # min: 2
-  # max: 10
 
 bindIP: 0.0.0.0
 
@@ -421,10 +419,6 @@ ssl:
   domain: ${OPT_DOMAIN}
   subscriberEmail: david@mimix.io
 
-pool:
-  # min: 2
-  # max: 10
-
 bindIP: 0.0.0.0
 
 logLevel: info
@@ -466,12 +460,15 @@ function create_tarball () {
 
   local file=$(basename ${OPT_MIKI_DIRECTORY}).tar.gz
 
+  local OPWD=${PWD}
+
   popd &> /dev/null
 
-  if [[ -n "${OPT_MAKE_TARBALL}" || -n "${OPT_DROPLET}" ]]; then
+  if [[ -n "${OPT_CREATE_TARBALL}" || -n "${OPT_DROPLET}" ]]; then
     tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" \
         -czf "${file}" --exclude ".git" \
         "$(basename ${OPT_MIKI_DIRECTORY})"
+    (cd "${OPWD}" && reset_repository)
   fi
 }
 
@@ -486,7 +483,9 @@ function self_ssh_key () {
     key_file="$HOME/.ssh/id_rsa"
   fi
 
-  ssh-keygen -l -E md5 -f "${key_file}" | awk '{print $2}' | sed 's/^...://'
+  if [[ -n "${key_file}" ]]; then
+    ssh-keygen -l -E md5 -f "${key_file}" | awk '{print $2}' | sed 's/^...://'
+  fi
 }
 
 function set_keys () {
@@ -506,7 +505,7 @@ function set_keys () {
 function create_droplet () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_INSTALL_DIRECTORY}" && -n "${OPT_DROPLET}" ]]; then
+  if [[ -n "${OPT_INSTALL_LOCATION}" && -n "${OPT_DROPLET}" ]]; then
     OPT_DROPLET_ADDRESS=$(doadm -DCN "${OPT_DROPLET}" -K "${OPT_SSH_KEYS}" )
     echo "${OPT_DROPLET_ADDRESS}"
   fi
@@ -529,7 +528,7 @@ function upload_tarball () {
 
   sleep "${OPT_SLEEP}"
 
-  if [[ -f "${file}" && -n "${OPT_INSTALL_DIRECTORY}" && -n "${OPT_DROPLET_USER}" ]] && droplet_ok; then
+  if [[ -f "${file}" && -n "${OPT_INSTALL_LOCATION}" && -n "${OPT_DROPLET_USER}" ]] && droplet_ok; then
     scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${file}" \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
@@ -557,7 +556,7 @@ function upload_database_init () {
 function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_INSTALL_DIRECTORY}" && -n "${OPT_DATABASE_INIT}" ]] && droplet_ok; then
+  if [[ -n "${OPT_INSTALL_LOCATION}" && -n "${OPT_DATABASE_INIT}" ]] && droplet_ok; then
     scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_PGADM}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
   fi
@@ -567,16 +566,16 @@ function install_miki () {
   debug ${FUNCNAME[0]} "$@"
 
   local file="$(basename ${OPT_MIKI_DIRECTORY}).tar.gz"
-  local base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_DIRECTORY}/bin/install -i ${OPT_INSTALL_DIRECTORY}"
+  local base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_LOCATION}/bin/install -i ${OPT_INSTALL_LOCATION}"
   local cmd=
 
-  if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok && [[ -n "${OPT_DATABASE_INIT}" ]]; then
+  if [[ -n "${OPT_INSTALL_LOCATION}" ]] && droplet_ok && [[ -n "${OPT_DATABASE_INIT}" ]]; then
     cmd="${base_cmd} -I /tmp/$(basename ${OPT_DATABASE_INIT})"
   else
     cmd="${base_cmd}"
   fi
 
-  if [[ -n "${OPT_INSTALL_DIRECTORY}" ]] && droplet_ok; then
+  if [[ -n "${OPT_INSTALL_LOCATION}" ]] && droplet_ok; then
     ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" \
         "${cmd}"
@@ -620,15 +619,17 @@ function local_install () {
 
   install_assets
   create_db_directory
+
+  delete_tarball
+  create_tarball
 }
 
-# note: should there be a separate option for trigerring remote installation?
 function remote_install () {
   debug ${FUNCNAME[0]} "$@"
 
-  # note: use droplet_ok
-  if [[ -n "${OPT_DROPLET}" && -n "${OPT_INSTALL_DIRECTORY}" && \
-        -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
+  if [[ -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_LOCATION}" ]] && \
+     droplet_ok && \
+     [[ -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
     create_password_file
     create_remote_config_yml
     create_init_sql
