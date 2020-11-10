@@ -62,6 +62,7 @@ OPT_DATABASE_INIT=
 OPT_FIREWALL_NAME=
 OPT_FIREWALL_ADDRESSES=
 OPT_FIREWALL_PORTS="22,80,443"
+OPT_CREATE_FIREWALL=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -83,16 +84,16 @@ function warn () {
 
 function debug () {
   if [[ -n "${OPT_DEBUG}" ]]; then
-    echo '**'
+    echo -n "** "
+    echo \${PWD}: ${PWD}
     echo \${@}: ${@}
-    echo \$OPT_DEBUG: "${OPT_DEBUG}"
   fi
 }
 
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options hvn:m:w:d:r:c:o:V:sStp:l:iKk:D:B:U:I:F:A:P: --longoptions help,debug,verbose,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm:,install-location:,install-remotely,remove-self-ssh-key,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options hvn:m:w:d:r:c:o:V:sStp:l:iKk:D:B:U:I:F:A:P:f --longoptions help,debug,verbose,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm:,install-location:,install-remotely,remove-self-ssh-key,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports:,create-firewall -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -128,6 +129,7 @@ function parse_arguments () {
       (-F|--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
       (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
+      (-f|--create-firewall) OPT_CREATE_FIREWALL=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -212,7 +214,7 @@ function set_firewall_name () {
 
   if [[ -n "${OPT_FIREWALL_NAME}" ]]; then
     OPT_FIREWALL="${OPT_FIREWALL_NAME}"
-  elif [[ -n "${OPT_NAME}" ]]; then
+  elif [[ -n "${OPT_NAME}" && -n "${OPT_CREATE_FIREWALL}" ]]; then
     OPT_FIREWALL="miki-${OPT_NAME}-fw"
   else
     OPT_FIREWALL=
@@ -460,15 +462,12 @@ function create_tarball () {
 
   local file=$(basename ${OPT_MIKI_DIRECTORY}).tar.gz
 
-  local OPWD=${PWD}
-
   popd &> /dev/null
 
   if [[ -n "${OPT_CREATE_TARBALL}" || -n "${OPT_DROPLET}" ]]; then
     tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" \
         -czf "${file}" --exclude ".git" \
         "$(basename ${OPT_MIKI_DIRECTORY})"
-    (cd "${OPWD}" && reset_repository)
   fi
 }
 
@@ -529,7 +528,7 @@ function upload_tarball () {
   sleep "${OPT_SLEEP}"
 
   if [[ -f "${file}" && -n "${OPT_INSTALL_LOCATION}" && -n "${OPT_DROPLET_USER}" ]] && droplet_ok; then
-    scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
+    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${file}" \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
   fi
@@ -540,15 +539,13 @@ function delete_tarball () {
 
   local directory="$(dirname ${OPT_MIKI_DIRECTORY})"
   local file="$(basename ${OPT_MIKI_DIRECTORY}).tar.gz"
-
-  rm -f "${directory}/${file}"
 }
 
 function upload_database_init () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_DATABASE_INIT}" ]]; then
-    scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
+    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_DATABASE_INIT}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/tmp"
   fi
 }
@@ -557,7 +554,7 @@ function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_INSTALL_LOCATION}" && -n "${OPT_DATABASE_INIT}" ]] && droplet_ok; then
-    scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
+    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_PGADM}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
   fi
 }
@@ -576,7 +573,7 @@ function install_miki () {
   fi
 
   if [[ -n "${OPT_INSTALL_LOCATION}" ]] && droplet_ok; then
-    ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" \
         "${cmd}"
   fi
@@ -620,16 +617,14 @@ function local_install () {
   install_assets
   create_db_directory
 
-  delete_tarball
   create_tarball
 }
 
 function remote_install () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_LOCATION}" ]] && \
-     droplet_ok && \
-     [[ -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
+  if [[ -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_LOCATION}" && \
+          -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
     create_password_file
     create_remote_config_yml
     create_init_sql

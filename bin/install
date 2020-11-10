@@ -100,7 +100,9 @@ EOF
 function extract_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
-  tar -C /var -xf miki.tar.gz
+  if [[ -f "${HOME}/miki.tar.gz" ]]; then
+    tar -C /var -xf "${HOME}/miki.tar.gz"
+  fi
 }
 
 function install_node_js () {
