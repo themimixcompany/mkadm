@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.3.3
+readonly VERSION=1.3.4
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -224,9 +224,9 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-  -h, --help                 Show this help
-  -d, --debug                Enable debugging mode
-  -v, --verbose              Enable verbose output
+      --help                 Show this help
+      --debug                Enable debugging mode
+      --verbose              Enable verbose output
   -n, --name                 Set the base name of the instance
   -w, --wiki-name            Set wiki name
   -d, --wiki-domain          Set wiki domain
