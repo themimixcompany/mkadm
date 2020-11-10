@@ -23,6 +23,7 @@ Scripts for building, configuring, and installing Miki.
 ---------------------------------------
 
 - [doadm](https://github.com/themimixcompany/doadm)
+- [pgadm](https://github.com/themimixcompany/pgadm)
 
 
 <a name="usage">Usage</a>
@@ -39,6 +40,7 @@ Before using this script, you must first authenticate with DigitalOcean. To do s
 
 To create a Miki instance with the following configuration,
 
+- name: `goliath`
 - domain: `goliath.streamsharing.io`
 - droplet name: `miki-goliath-www`
 - firewall name: `miki-goliath-fw`
@@ -61,19 +63,19 @@ mkadm -in goliath -I ~/miki/dat/mimix-miki.pg -fA 73.6.24.189.144
 
 When the installation has finished, you’ll see a message containing the IP address of the Miki instance. Use this IP address as the DNS A record for `goliath.streamsharing.io` using your domain registrar.
 
-To explicitly enable SSL on `miki-goliath-www`, run:
+To explicitly enable SSL on `goliath`, run:
 
 ```
 mkadm -h goliath -s
 ```
 
-To change the hostname of `miki-goliath-www` to `goliath.mimix.io`, run:
+To change the hostname of `goliath` to `goliath.mimix.io`, run:
 
 ```
 mkadm -h goliath -N goliath.mimix.io
 ```
 
-To get the date on `miki-goliath-www`, run:
+To get the date on `goliath`, run:
 
 ```
 mkadm -h goliath -c date
