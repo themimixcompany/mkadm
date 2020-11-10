@@ -85,9 +85,21 @@ function warn () {
 function debug () {
   if [[ -n "${OPT_DEBUG}" ]]; then
     echo -n "** "
-    echo \${PWD}: ${PWD}
-    echo \${@}: ${@}
+    echo "\\${PWD}: ${PWD}"
+    echo "\\${@}: ${@}"
   fi
+}
+
+function push () {
+  debug ${FUNCNAME[0]} "$@"
+
+  pushd "${1}" &> /dev/null
+}
+
+function pop () {
+  debug ${FUNCNAME[0]} "$@"
+
+  popd &> /dev/null
 }
 
 function parse_arguments () {
@@ -232,7 +244,7 @@ function set_names () {
 function initialize () {
   debug ${FUNCNAME[0]} "$@"
 
-  pushd "${OPT_MIKI_DIRECTORY}" &> /dev/null
+  push "${OPT_MIKI_DIRECTORY}"
 
   if [[ -f "package.json" && "$(jq -r '.name' package.json)" == "wiki" ]]; then
     return 0
@@ -462,7 +474,7 @@ function create_tarball () {
 
   local file=$(basename ${OPT_MIKI_DIRECTORY}).tar.gz
 
-  popd &> /dev/null
+  pop
 
   if [[ -n "${OPT_CREATE_TARBALL}" || -n "${OPT_DROPLET}" ]]; then
     tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" \
@@ -625,6 +637,8 @@ function remote_install () {
 
   if [[ -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_LOCATION}" && \
           -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
+    push "${OPT_MIKI_DIRECTORY}"
+
     create_password_file
     create_remote_config_yml
     create_init_sql
