@@ -122,8 +122,8 @@ function install_postgres () {
 function install_tools () {
   debug ${FUNCNAME[0]} "$@"
 
-  apt-get install -y jq
-  snap install yq
+  apt-get install -y jq python3-pip
+  pip3 install yq
 }
 
 function install_miki_service () {
