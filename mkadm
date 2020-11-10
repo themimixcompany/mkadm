@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.3.1
+readonly VERSION=1.3.2
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -71,6 +71,7 @@ OPT_SHORT_HOST=
 OPT_ENABLE_SSL=
 OPT_DISABLE_SSL=
 OPT_DOMAIN_NAME=
+OPT_COMMAND=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -125,7 +126,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options vn:m:w:d:r:c:o:V:eEtp:l:iKk:D:B:U:I:F:A:P:fy:a:H:h:sSN: --longoptions help,debug,verbose,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm:,install-location:,install-remotely,remove-self-ssh-key,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports:,create-firewall,yaml-filter:,address:,host:,short-host:,enable-ssl,disable-ssl,domain-name: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options vn:m:w:d:r:C:O:V:eEtp:l:iKk:D:B:U:I:F:A:P:fy:a:H:h:sSN:c: --longoptions help,debug,verbose,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm:,install-location:,install-remotely,remove-self-ssh-key,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports:,create-firewall,yaml-filter:,address:,host:,short-host:,enable-ssl,disable-ssl,domain-name:,command:x -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -145,8 +146,8 @@ function parse_arguments () {
       (-w|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (-d|--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
       (-r|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
-      (-c|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
-      (-o|--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
+      (-C|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
+      (-O|--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
       (-V|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
 
       (-e|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
@@ -180,6 +181,8 @@ function parse_arguments () {
       (-S|--disable-ssl) OPT_DISABLE_SSL=true; shift ;;
       (-N|--domain-name) OPT_DOMAIN_NAME=$2; shift 2 ;;
 
+      (-c|--command) OPT_COMMAND=$2; shift 2 ;;
+
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -191,12 +194,19 @@ function process_arguments () {
 
   if [[ -n "${OPT_HELP}" || "${#}" -lt 1 ]]; then
     display_usage
-  elif [[ -n "${OPT_HOST}" ]]; then
+  elif [[ -n "${OPT_HOST}" && -n "${OPT_COMMAND}" ]]; then
     send_command
     exit 0
-  elif [[ -n "${OPT_SHORT_HOST}" ]]; then
+  elif [[ -n "${OPT_SHORT_HOST}" && -n "${OPT_COMMAND}" ]]; then
     OPT_HOST="miki-${OPT_SHORT_HOST}-www"
     send_command
+    exit 0
+  elif [[ -n "${OPT_HOST}" && -z "${OPT_COMMAND}" ]]; then
+    send_filter
+    exit 0
+  elif [[ -n "${OPT_SHORT_HOST}" && -z "${OPT_COMMAND}" ]]; then
+    OPT_HOST="miki-${OPT_SHORT_HOST}-www"
+    send_filter
     exit 0
   elif [[ ! "$(basename ${OPT_MIKI_DIRECTORY})" == "miki" ]]; then
     display_usage
@@ -749,7 +759,7 @@ function set_domain_name () {
   fi
 }
 
-function send_command () {
+function send_filter () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_HOST}" ]]; then
@@ -758,6 +768,14 @@ function send_command () {
     [[ -n "${OPT_DOMAIN_NAME}" ]] && set_domain_name
     [[ -n "${OPT_YAML_FILTER}" ]] && send_yaml_filter
   fi
+}
+
+function send_command () {
+  debug ${FUNCNAME[0]} "$@"
+
+  for address in $(get_droplet_address "${OPT_HOST}"); do
+    run_ssh "${OPT_DROPLET_USER}@${address}" "${OPT_COMMAND}"
+  done
 }
 
 function main () {
