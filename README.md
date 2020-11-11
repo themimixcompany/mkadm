@@ -44,9 +44,6 @@ To create a Miki instance with the following configuration,
 - domain: `goliath.streamsharing.io`
 - droplet name: `miki-goliath-www`
 - firewall name: `miki-goliath-fw`
-- database init: `~/miki/dat/mimix-miki.pg`
-- ssh keys:
-  - `a7:d4:c1:ab:64:21:e5:96:e9:fa:58:1c:93:73:ed:56`
 - allowed ip addresses:
   - `73.6.24.189`
 - allowed ports:
@@ -58,10 +55,17 @@ To create a Miki instance with the following configuration,
 run:
 
 ```
-mkadm -in goliath -I ~/miki/dat/mimix-miki.pg -fA 73.6.24.189.144
+mkadm -in goliath -fA 73.6.24.189.144
 ```
 
 When the installation has finished, you’ll see a message containing the IP address of the Miki instance. Use this IP address as the DNS A record for `goliath.streamsharing.io` using your domain registrar.
+
+To do the same, but initialize the database with a PostgreSQL dump, run:
+
+```
+mkadm -in goliath -I ~/miki/dat/mimix-miki.pg
+
+```
 
 To expunge `goliath`, run:
 
