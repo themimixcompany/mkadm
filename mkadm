@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.3.6
+readonly VERSION=1.3.7
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -205,6 +205,9 @@ function process_arguments () {
   elif [[ -n "${OPT_SHORT_HOST}" && -n "${OPT_SSH}" ]]; then
     OPT_HOST="miki-${OPT_SHORT_HOST}-www"
     connect_ssh
+    exit 0
+  elif [[ -n "${OPT_HOST}" && -n "${OPT_EXPUNGE}" ]]; then
+    expunge
     exit 0
   elif [[ -n "${OPT_SHORT_HOST}" && -n "${OPT_EXPUNGE}" ]]; then
     OPT_HOST="miki-${OPT_SHORT_HOST}-www"
