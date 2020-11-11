@@ -26,3 +26,6 @@ all: build
 
 build:
   docker build -f $(DOCKERFILE) -t $(NAME) .
+
+tags:
+  ctags -eR --language-force=sh
