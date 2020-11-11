@@ -6,7 +6,7 @@ set -o pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS=$(uname)
-readonly VERSION=1.3.5
+readonly VERSION=1.3.6
 
 readonly OPT_BASE_NAME=${SELF}
 
@@ -72,6 +72,8 @@ OPT_ENABLE_SSL=
 OPT_DISABLE_SSL=
 OPT_DOMAIN_NAME=
 OPT_COMMAND=
+OPT_SSH=
+OPT_EXPUNGE=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -126,7 +128,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:m:w:d:r:C:O:V:eEtp:l:iKk:D:B:U:I:F:A:P:fy:a:H:h:sSN:c: --longoptions help,debug,verbose,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm:,install-location:,install-remotely,remove-self-ssh-key,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports:,create-firewall,yaml-filter:,address:,host:,short-host:,enable-ssl,disable-ssl,domain-name:,command:x -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:m:w:d:r:C:O:V:eEtp:l:iKk:D:B:U:I:F:A:P:fy:a:H:h:N:c:sx --longoptions help,debug,verbose,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm:,install-location:,install-remotely,remove-self-ssh-key,ssh-key:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports:,create-firewall,yaml-filter:,address:,host:,short-host:,enable-ssl,disable-ssl,domain-name:,command:,ssh,expunge -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -177,11 +179,14 @@ function parse_arguments () {
       (-a|--address) OPT_ADDRESS=$2; shift 2 ;;
       (-H|--host) OPT_HOST=$2; shift 2 ;;
       (-h|--short-host) OPT_SHORT_HOST=$2; shift 2 ;;
-      (-s|--enable-ssl) OPT_ENABLE_SSL=true; shift ;;
-      (-S|--disable-ssl) OPT_DISABLE_SSL=true; shift ;;
+      (--enable-ssl) OPT_ENABLE_SSL=true; shift ;;
+      (--disable-ssl) OPT_DISABLE_SSL=true; shift ;;
       (-N|--domain-name) OPT_DOMAIN_NAME=$2; shift 2 ;;
 
       (-c|--command) OPT_COMMAND=$2; shift 2 ;;
+      (-s|--ssh) OPT_SSH=true; shift ;;
+
+      (-x|--expunge) OPT_EXPUNGE=true; shift ;;
 
       (--) shift; break ;;
       (*) break ;;
@@ -194,6 +199,17 @@ function process_arguments () {
 
   if [[ -n "${OPT_HELP}" || "${#}" -lt 1 ]]; then
     display_usage
+  elif [[ -n "${OPT_HOST}" && -n "${OPT_SSH}" ]]; then
+    connect_ssh
+    exit 0
+  elif [[ -n "${OPT_SHORT_HOST}" && -n "${OPT_SSH}" ]]; then
+    OPT_HOST="miki-${OPT_SHORT_HOST}-www"
+    connect_ssh
+    exit 0
+  elif [[ -n "${OPT_SHORT_HOST}" && -n "${OPT_EXPUNGE}" ]]; then
+    OPT_HOST="miki-${OPT_SHORT_HOST}-www"
+    expunge
+    exit 0
   elif [[ -n "${OPT_HOST}" && -n "${OPT_COMMAND}" ]]; then
     send_command
     exit 0
@@ -253,9 +269,12 @@ OPTIONS:
   -a, --address              The IP address to send the YAML filter to
   -H, --host                 Specify the name of the remote host to send commands to
   -h, --short-host           Specify the short name of the remote host to send commands to
-  -s, --enable-ssl           Enable SSL on the remote instance
-  -S, --disable-ssl          Disable SSL on the remote instance
+      --enable-ssl           Enable SSL on the remote instance
+      --disable-ssl          Disable SSL on the remote instance
   -N, --domain-name          Set the domain name of the remote instance
+  -c, --command              Send an arbitrary command to the instance
+  -s, --ssh                  Connect to the instance via SSH
+  -x, --expunge              Expunge the instance
 EOF
   exit 0
 }
@@ -776,6 +795,24 @@ function send_command () {
   for address in $(get_droplet_address "${OPT_HOST}"); do
     run_ssh "${OPT_DROPLET_USER}@${address}" "${OPT_COMMAND}"
   done
+}
+
+function connect_ssh () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  if [[ -n "${address}" ]]; then
+    run_ssh "${OPT_DROPLET_USER}@${address}"
+  fi
+}
+
+function expunge () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_SHORT_HOST}" && -n "${OPT_EXPUNGE}" ]]; then
+    doadm -DXN "${OPT_HOST}"
+  fi
 }
 
 function main () {

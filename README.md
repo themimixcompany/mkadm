@@ -63,16 +63,22 @@ mkadm -in goliath -I ~/miki/dat/mimix-miki.pg -fA 73.6.24.189.144
 
 When the installation has finished, you’ll see a message containing the IP address of the Miki instance. Use this IP address as the DNS A record for `goliath.streamsharing.io` using your domain registrar.
 
+To expunge `goliath`, run:
+
+```
+mkadm -h goliath -x
+```
+
 To explicitly enable SSL on `goliath`, run:
 
 ```
-mkadm -h goliath -s
+mkadm -h goliath --enable-ssl
 ```
 
-To change the hostname of `goliath` to `goliath.mimix.io`, run:
+To change the domain name of `goliath` to `goliath.mimix.io`, run:
 
 ```
-mkadm -h goliath -N goliath.mimix.io
+mkadm -h goliath --domain-name goliath.mimix.io
 ```
 
 To get the date on `goliath`, run:
