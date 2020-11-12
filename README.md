@@ -54,42 +54,33 @@ To create a Miki instance with the following configuration,
 
 run:
 
-```
-mkadm -in goliath -fA 73.6.24.189.144
-```
+    mkadm -in goliath -fA 73.6.24.189.144
 
 When the installation has finished, you’ll see a message containing the IP address of the Miki instance. Use this IP address as the DNS A record for `goliath.streamsharing.io` using your domain registrar.
 
 To do the same, but initialize the database with a PostgreSQL dump, run:
 
-```
-mkadm -in goliath -I ~/miki/dat/mimix-miki.pg
+    mkadm -in goliath -I ~/miki/dat/mimix-miki.pg
 
-```
+To explicitly enable SSL on goliath, run:
+
+    mkadm -n goliath --enable-ssl
+
+To change the domain name of goliath to `goliath.mimix.io`, run:
+
+    mkadm -n goliath --domain-name goliath.mimix.io
+
+To get the date on goliath, run:
+
+    mkadm -n goliath -c date
+
+To connect to goliath via SSH, run:
+
+    mkadm -sn goliath
 
 To expunge `goliath`, run:
 
-```
-mkadm -h goliath -x
-```
-
-To explicitly enable SSL on `goliath`, run:
-
-```
-mkadm -h goliath --enable-ssl
-```
-
-To change the domain name of `goliath` to `goliath.mimix.io`, run:
-
-```
-mkadm -h goliath --domain-name goliath.mimix.io
-```
-
-To get the date on `goliath`, run:
-
-```
-mkadm -h goliath -c date
-```
+    mkadm -xn goliath
 
 
 ### <a name="miscellany">Miscellany</a>
