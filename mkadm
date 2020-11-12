@@ -8,6 +8,11 @@ readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 
 readonly OS="$(uname)"
 readonly VERSION="1.3.10"
 
+OPT_HELP=
+OPT_DEBUG=
+OPT_VERBOSE=
+OPT_VERSION=
+
 readonly VAL_SLEEP="15"
 readonly VAL_RANDOM="$(od -t uI -N 4 /dev/urandom | awk '{print $2}' | sed 2d)"
 readonly VAL_BASE_COMMIT="2.5.159"
@@ -15,11 +20,6 @@ readonly VAL_DEFAULT_PACKAGE_VERSION="1.0.0"
 readonly VAL_MIKI_DOMAIN="miki.mimix.io"
 readonly VAL_RESOURCES_DIR="${SELF_DIR}/resources"
 readonly VAL_DEFAULT_DOMAIN="streamsharing.io"
-
-OPT_HELP=
-OPT_DEBUG=
-OPT_VERBOSE=
-OPT_VERSION=
 
 VAL_DOMAIN=
 VAL_DROPLET=
@@ -116,7 +116,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:m:w:d:r:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lc:sx --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,expunge-instance -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:m:w:d:r:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lc:sx --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,expunge-instance -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -597,7 +597,7 @@ function create_droplet () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_INSTALL_PATH}" && -n "${VAL_DROPLET}" ]]; then
-    OPT_DROPLET_ADDRESS=$(doadm -DCN "${VAL_DROPLET}" -K "${OPT_SSH_KEYS}" )
+    OPT_DROPLET_ADDRESS=$(doadm -CDN "${VAL_DROPLET}" -K "${OPT_SSH_KEYS}" )
     echo "${OPT_DROPLET_ADDRESS}"
   fi
 }
@@ -671,8 +671,8 @@ function create_firewall () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${VAL_FIREWALL}" ]]; then
-    doadm -FCN "${VAL_FIREWALL}" -a "${VAL_DROPLET}" \
-          -A "${OPT_FIREWALL_ADDRESSES}" -P "${OPT_FIREWALL_PORTS}"
+    doadm -CFN "${VAL_FIREWALL}" -a "${VAL_DROPLET}" \
+          -SA "${OPT_FIREWALL_ADDRESSES}" -P "${OPT_FIREWALL_PORTS}"
   fi
 }
 
@@ -708,7 +708,7 @@ function local_install () {
 function droplet_name () {
   debug ${FUNCNAME[0]} "$@"
 
-  doadm -DL | awk "/[0-9]+\s+${1}\s+/" | awk '{print $2}'
+  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $2}'
 }
 
 function check_droplet () {
@@ -753,7 +753,7 @@ function remote_install () {
 function droplet_address () {
   debug ${FUNCNAME[0]} "$@"
 
-  doadm -DL | awk "/[0-9]+\s+${1}/" | awk '{print $3}'
+  doadm -LD | awk "/[0-9]+\s+${1}/" | awk '{print $3}'
 }
 
 function send_yaml_filter () {
@@ -832,7 +832,7 @@ function expunge_instance () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_EXPUNGE_INSTANCE}" ]]; then
-    doadm -DXN "${OPT_HOST}"
+    doadm -XDN "${OPT_HOST}"
   fi
 
   exit $?
@@ -842,7 +842,7 @@ function list_instances () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_LIST_INSTANCES}" ]]; then
-    doadm -Dl | awk "/[0-9]+\s+miki/" | column -t
+    doadm -lD | awk "/[0-9]+\s+miki/" | column -t
   fi
 
   exit 0
