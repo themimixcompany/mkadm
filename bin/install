@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 
-set -eu
-set -o pipefail
+set -euo pipefail
 
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION=1.0.2
+readonly VERSION="1.0.2"
 
-readonly VAL_SLEEP=15
+readonly VAL_SLEEP="15"
 
-VAL_INSTALL_DIRECTORY=/var/miki
+VAL_INSTALL_DIRECTORY="/var/miki"
 
 OPT_HELP=
 OPT_DEBUG=

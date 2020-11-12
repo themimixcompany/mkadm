@@ -45,6 +45,7 @@ To create a Miki instance with the following configuration,
 - droplet name: `miki-goliath-www`
 - firewall name: `miki-goliath-fw`
 - allowed ip addresses:
+  - self address (control center)
   - `73.6.24.189`
 - allowed ports:
   - `22`
