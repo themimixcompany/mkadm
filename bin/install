@@ -9,7 +9,8 @@ readonly OS="$(uname)"
 readonly VERSION=1.0.2
 
 readonly VAL_SLEEP=15
-readonly VAL_INSTALL_DIRECTORY=/var/miki
+
+VAL_INSTALL_DIRECTORY=/var/miki
 
 OPT_HELP=
 OPT_DEBUG=
@@ -19,9 +20,9 @@ OPT_DATABASE_INIT=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
-    echo "error: ${@}" >&2
+    echo "ERROR: ${@}" >&2
   else
-    echo -e "\e[0;31m\e[1merror: \e[0;0m${@}" >&2
+    echo -e "\e[0;31m\e[1mERROR: \e[0;0m${@}" >&2
   fi
 
   exit 1
@@ -29,9 +30,9 @@ function error () {
 
 function warn () {
   if [[ "${OS}" == "Darwin" ]]; then
-    echo "warning: ${@}" >&2
+    echo "WARNING: ${@}" >&2
   else
-    echo -e "\e[0;33mwarning: \e[0;0m${@}" >&2
+    echo -e "\e[0;33mWARNING: \e[0;0m${@}" >&2
   fi
 }
 
@@ -136,9 +137,7 @@ function initialize_database () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_DATABASE_INIT}" ]]; then
-    "/usr/local/bin/pgadm" \
-      -C "${VAL_INSTALL_DIRECTORY}/config.yml" \
-      -I "${OPT_DATABASE_INIT}" || true
+    /usr/local/bin/pgadm -If "${OPT_DATABASE_INIT}" || true
     rm -f "${OPT_DATABASE_INIT}"
   fi
 }

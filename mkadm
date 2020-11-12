@@ -37,7 +37,7 @@ OPT_PACKAGE_VERSION=
 OPT_ENABLE_WIKI_SSL=false
 OPT_ENABLE_DB_SSL=false
 OPT_CREATE_TARBALL=
-OPT_PGADM=
+OPT_PGADM_PATH=$(which pgadm)
 OPT_INSTALL_PATH=/var/miki
 OPT_INSTALL_REMOTELY=
 OPT_REMOVE_SELF_SSH_KEY=
@@ -65,9 +65,9 @@ OPT_LIST_INSTANCES=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
-    echo "error: ${@}" >&2
+    echo "ERROR: ${@}" >&2
   else
-    echo -e "\e[0;31m\e[1merror: \e[0;0m${@}" >&2
+    echo -e "\e[0;31m\e[1mERROR: \e[0;0m${@}" >&2
   fi
 
   exit 1
@@ -75,17 +75,17 @@ function error () {
 
 function warn () {
   if [[ "${OS}" == "Darwin" ]]; then
-    echo "warning: ${@}" >&2
+    echo "WARNING: ${@}" >&2
   else
-    echo -e "\e[0;33mwarning: \e[0;0m${@}" >&2
+    echo -e "\e[0;33mWARNING: \e[0;0m${@}" >&2
   fi
 }
 
 function debug () {
   if [[ -n "${OPT_DEBUG}" ]]; then
     echo -n "** "
-    echo "\\${PWD}: ${PWD}"
-    echo "\\${@}: ${@}"
+    echo "\${PWD}: ${PWD}"
+    echo "\${@}: ${@}"
   fi
 }
 
@@ -141,7 +141,7 @@ function parse_arguments () {
       (-e|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-E|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
       (-t|--create-tarball) OPT_CREATE_TARBALL=true; shift ;;
-      (-p|--pgadm-path) OPT_PGADM=$2; shift 2 ;;
+      (-p|--pgadm-path) OPT_PGADM_PATH=$2; shift 2 ;;
       (-P|--install-path) OPT_MAKE_TARBALL=true; OPT_INSTALL_PATH=$2; shift 2 ;;
       (-i|--install-remotely) OPT_MAKE_TARBALL=true; OPT_INSTALL_REMOTELY=true; shift ;;
       (-K|--remove-self-ssh-key) OPT_REMOVE_SELF_SSH_KEY=true; shift ;;
@@ -149,7 +149,7 @@ function parse_arguments () {
       (-D|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
       (-B|--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
       (-U|--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
-      (-I|--database-init) OPT_DATABASE_INIT=$2; OPT_PGADM=$(which pgadm) ; shift 2 ;;
+      (-I|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
       (-F|--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
       (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
@@ -274,10 +274,10 @@ OPTIONS:
       --verbose              Enable verbose output
       --version              Display program version info
   -n, --name                 Set the name of the instance
-  -m, --miki-directory       Specify the location of the input source directory
+  -m, --miki-directory       Specify the path of the input source directory
   -w, --wiki-name            Set wiki name
   -d, --wiki-domain          Set wiki domain
-  -r, --wiki-resources       Set location of wiki resources
+  -r, --wiki-resources       Set path of wiki resources
   -C, --company-name         Set company name
   -O, --company-domain       Set company domain
   -V, --package-version      Set version in package.json
@@ -643,7 +643,7 @@ function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
-    run_scp "${OPT_PGADM}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
+    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
   fi
 }
 
