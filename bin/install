@@ -116,6 +116,11 @@ function install_postgres () {
   debug ${FUNCNAME[0]} "$@"
 
   apt-get install -y postgresql postgresql-contrib postgresql-client-common
+}
+
+function load_init_sql () {
+  debug ${FUNCNAME[0]} "$@"
+
   sudo -u postgres psql --file="${VAL_INSTALL_PATH}/sql/init.sql"
 }
 
@@ -141,6 +146,14 @@ function initialize_database () {
   fi
 }
 
+function load_post_sql () {
+  debug ${FUNCNAME[0]} "$@"
+
+  sleep "${VAL_SLEEP}"
+
+  sudo PGPASSWORD=$(yq -y '.db.pass' /var/miki/config.yml | sed 2d) psql --host=localhost --dbname=defaultdb --username=doadmin --file="${VAL_INSTALL_PATH}/sql/post.sql"
+}
+
 function start_miki_service () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -162,11 +175,12 @@ function main () {
 
   install_node_js
   install_postgres
+  load_init_sql
   install_tools
   install_miki_service
-
   initialize_database
   start_miki_service
+  #load_post_sql
 }
 
 main "$@"
