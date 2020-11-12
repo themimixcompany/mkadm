@@ -9,7 +9,7 @@ readonly VERSION="1.0.2"
 
 readonly VAL_SLEEP="15"
 
-VAL_INSTALL_DIRECTORY="/var/miki"
+VAL_INSTALL_PATH="/var/miki"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -46,7 +46,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options s:i:I: --longoptions help,debug,verbose,sleep:,install-directory:,database-init: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options s:i:I: --longoptions help,debug,verbose,sleep:,install-path:,database-init: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -60,7 +60,7 @@ function parse_arguments () {
       (--debug) OPT_DEBUG=true; shift ;;
       (--verbose) OPT_VERBOSE=true; shift ;;
       (-s|--sleep) VAL_SLEEP=$2; shift 2 ;;
-      (-i|--install-directory) VAL_INSTALL_DIRECTORY=$2; shift 2 ;;
+      (-i|--install-path) VAL_INSTALL_PATH=$2; shift 2 ;;
       (-I|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
@@ -91,7 +91,7 @@ OPTIONS:
       --debug             Enable debugging mode
       --verbose           Enable verbose output
   -s, --sleep             Set the sleep time
-  -i, --install-directory The directory to install miki on
+  -i, --install-path      The path to install Miki on
   -I, --database-init     Initialize the database with a dump
 EOF
   exit 0
@@ -116,7 +116,7 @@ function install_postgres () {
   debug ${FUNCNAME[0]} "$@"
 
   apt-get install -y postgresql postgresql-contrib postgresql-client-common
-  sudo -u postgres psql --file="${VAL_INSTALL_DIRECTORY}/sql/init.sql"
+  sudo -u postgres psql --file="${VAL_INSTALL_PATH}/sql/init.sql"
 }
 
 function install_tools () {
