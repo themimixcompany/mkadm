@@ -5,13 +5,16 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.3.10"
+readonly VERSION="1.3.11"
 
 OPT_HELP=
 OPT_DEBUG=
 OPT_VERBOSE=
 OPT_VERSION=
 
+readonly VAL_BASE_NAME="miki"
+readonly VAL_WWW_NAME="www"
+readonly VAL_FW_NAME="fw"
 readonly VAL_SLEEP="15"
 readonly VAL_RANDOM="$(od -t uI -N 4 /dev/urandom | awk '{print $2}' | sed 2d)"
 readonly VAL_BASE_COMMIT="2.5.159"
@@ -24,6 +27,12 @@ VAL_DOMAIN=
 VAL_DROPLET=
 VAL_FIREWALL=
 VAL_PASSWORD_FILE=
+
+OPT_RESET_ADMIN_PASSWORD=
+VAL_NEW_PASSWORD=
+VAL_NEW_PASSWORD_HASH=
+VAL_NEW_PASSWORD_FILE=
+VAL_REMOTE_NEW_PASSWORD_FILE=
 
 OPT_NAME=
 OPT_MIKI_DIRECTORY=$HOME/miki/miki
@@ -115,7 +124,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:m:w:d:r:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lc:sx --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,expunge-instance -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:m:w:d:R:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lc:sxr --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,expunge-instance,reset-admin-password -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -133,7 +142,7 @@ function parse_arguments () {
       (-m|--miki-directory) OPT_MIKI_DIRECTORY=$2; shift 2 ;;
       (-w|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (-d|--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
-      (-r|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
+      (-R|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
       (-C|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
       (-O|--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
       (-V|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
@@ -162,6 +171,7 @@ function parse_arguments () {
       (-c|--command) OPT_COMMAND=$2; shift 2 ;;
       (-s|--ssh) OPT_SSH=true; shift ;;
       (-x|--expunge) OPT_EXPUNGE_INSTANCE=true; shift ;;
+      (-r|--reset-admin-password) OPT_RESET_ADMIN_PASSWORD=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -171,13 +181,13 @@ function parse_arguments () {
 function make_miki_www_name () {
   debug ${FUNCNAME[0]} "$@"
 
-  echo "miki-${OPT_NAME}-www"
+  echo "${VAL_BASE_NAME}-${OPT_NAME}-${VAL_WWW_NAME}"
 }
 
 function make_miki_fw_name () {
   debug ${FUNCNAME[0]} "$@"
 
-  echo "miki-${OPT_NAME}-fw"
+  echo "${VAL_BASE_NAME}-${OPT_NAME}-${VAL_FW_NAME}"
 }
 
 function set_name () {
@@ -237,6 +247,9 @@ function process_arguments () {
     display_usage
   elif [[ -n "${OPT_VERSION}" ]]; then
     display_version
+  elif [[ -n "${OPT_RESET_ADMIN_PASSWORD}" ]]; then
+    set_name
+    reset_admin_password
   elif [[ -n "${OPT_INSTALL_REMOTELY}" ]]; then
     check_droplet
   elif [[ -n "${OPT_LIST_INSTANCES}" ]]; then
@@ -704,7 +717,7 @@ function local_install () {
   create_tarball
 }
 
-function droplet_name () {
+function get_droplet_name () {
   debug ${FUNCNAME[0]} "$@"
 
   doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $2}'
@@ -713,7 +726,7 @@ function droplet_name () {
 function check_droplet () {
   debug ${FUNCNAME[0]} "$@"
 
-  local droplet=$(droplet_name ${VAL_DROPLET})
+  local droplet=$(get_droplet_name ${VAL_DROPLET})
 
   if [[ -n "${droplet}" ]]; then
     error "A droplet with that name already exists. Aborting."
@@ -749,10 +762,10 @@ function remote_install () {
   fi
 }
 
-function droplet_address () {
+function get_droplet_address () {
   debug ${FUNCNAME[0]} "$@"
 
-  doadm -LD | awk "/[0-9]+\s+${1}/" | awk '{print $3}'
+  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $3}'
 }
 
 function send_yaml_filter () {
@@ -761,7 +774,7 @@ function send_yaml_filter () {
   local filter="${1:-${OPT_YAML_FILTER}}"
 
   if [[ -n "${filter}" && -n "${OPT_HOST}" ]]; then
-    for address in $(droplet_address "${OPT_HOST}"); do
+    for address in $(get_droplet_address "${OPT_HOST}"); do
       run_ssh "${OPT_DROPLET_USER}@${address}" \
               "yq -iy \"${filter}\" /var/miki/config.yml; systemctl restart miki.service"
     done
@@ -808,7 +821,7 @@ function send_filter () {
 function connect_ssh () {
   debug ${FUNCNAME[0]} "$@"
 
-  local address=$(droplet_address "${OPT_HOST}")
+  local address=$(get_droplet_address "${OPT_HOST}")
 
   if [[ -n "${address}" ]]; then
     run_ssh "${OPT_DROPLET_USER}@${address}"
@@ -820,7 +833,7 @@ function connect_ssh () {
 function send_command () {
   debug ${FUNCNAME[0]} "$@"
 
-  for address in $(droplet_address "${OPT_HOST}"); do
+  for address in $(get_droplet_address "${OPT_HOST}"); do
     run_ssh "${OPT_DROPLET_USER}@${address}" "${OPT_COMMAND}"
   done
 
@@ -842,6 +855,89 @@ function list_instances () {
 
   if [[ -n "${OPT_LIST_INSTANCES}" ]]; then
     doadm -lD | awk "/[0-9]+\s+miki/" | column -t
+  fi
+
+  exit 0
+}
+
+function generate_new_password () {
+  debug ${FUNCNAME[0]} "$@"
+
+  VAL_NEW_PASSWORD="$(goxkcdpwgen -n 2)"
+}
+
+function generate_new_password_hash () {
+  debug ${FUNCNAME[0]} "$@"
+
+  VAL_NEW_PASSWORD_HASH=$(echo "${VAL_NEW_PASSWORD}" | htpasswd -niBC 10 "" | tr -d ':\n')
+}
+
+function create_new_password_file () {
+  debug ${FUNCNAME[0]} "$@"
+
+  VAL_NEW_PASSWORD_FILE=$(mktemp --suffix .sql)
+
+  cat << EOF > ${VAL_NEW_PASSWORD_FILE}
+UPDATE users SET password = '${VAL_NEW_PASSWORD_HASH}' WHERE name = 'Administrator';
+UPDATE users SET "mustChangePwd" = 't' WHERE name = 'Administrator';
+EOF
+}
+
+function upload_password_file () {
+  debug ${FUNCNAME[0]} "$@"
+
+  VAL_REMOTE_NEW_PASSWORD_FILE=$(mktemp --dry-run --suffix .sql)
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  run_scp -q "${VAL_NEW_PASSWORD_FILE}" \
+          "${OPT_DROPLET_USER}@${address}:${VAL_REMOTE_NEW_PASSWORD_FILE}"
+}
+
+function remote_reset_password () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  if [[ -n "${address}" ]]; then
+    run_ssh "${OPT_DROPLET_USER}@${address}" "sudo PGPASSWORD=\$(yq -y '.db.pass' /var/miki/config.yml | sed 2d) psql --host=localhost --dbname=defaultdb --username=doadmin --file=${VAL_REMOTE_NEW_PASSWORD_FILE} &> /dev/null"
+  fi
+}
+
+function remote_delete_reset_file () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  if [[ -n "${address}" ]]; then
+    run_ssh "${OPT_DROPLET_USER}@${address}" "rm -f ${VAL_REMOTE_NEW_PASSWORD_FILE}"
+  fi
+}
+
+function delete_reset_file () {
+  debug ${FUNCNAME[0]} "$@"
+
+  rm -f "${VAL_NEW_PASSWORD_FILE}"
+}
+
+function display_new_password () {
+  debug ${FUNCNAME[0]} "$@"
+
+  echo "${VAL_NEW_PASSWORD}"
+}
+
+function reset_admin_password () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_RESET_ADMIN_PASSWORD}" && -n "${OPT_HOST}" ]]; then
+    generate_new_password
+    generate_new_password_hash
+    create_new_password_file
+    upload_password_file
+    remote_reset_password
+    remote_delete_reset_file
+    delete_reset_file
+    display_new_password
   fi
 
   exit 0
