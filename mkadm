@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.3.16"
+readonly VERSION="1.4.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -31,15 +31,15 @@ VAL_FIREWALL=
 VAL_PASSWORD_FILE=
 
 OPT_RESET_ADMIN_PASSWORD=
-VAL_NEW_PASSWORD=
-VAL_NEW_PASSWORD_HASH=
-VAL_NEW_SQL_FILE=
-VAL_NEW_SQL_REMOTE_FILE=
+VAL_ADMIN_PASSWORD=
+VAL_ADMIN_PASSWORD_HASH=
+VAL_ADMIN_SQL_LOCAL_FILE=
+VAL_ADMIN_SQL_REMOTE_FILE=
 
 OPT_CREATE_SUPPORT_ACCOUNT=
 VAL_SUPPORT_PASSWORD=
 VAL_SUPPORT_PASSWORD_HASH=
-VAL_SUPPORT_SQL_FILE=
+VAL_SUPPORT_SQL_LOCAL_FILE=
 VAL_SUPPORT_SQL_REMOTE_FILE=
 
 OPT_NAME=
@@ -947,8 +947,8 @@ function load_remote_sql () {
 function generate_new_password () {
   debug ${FUNCNAME[0]} "$@"
 
-  VAL_NEW_PASSWORD="$(goxkcdpwgen -n 2)"
-  VAL_NEW_PASSWORD_HASH=$(generate_hash "${VAL_NEW_PASSWORD}")
+  VAL_ADMIN_PASSWORD="$(goxkcdpwgen -n 2)"
+  VAL_ADMIN_PASSWORD_HASH=$(generate_hash "${VAL_ADMIN_PASSWORD}")
 }
 
 function create_new_password_file () {
@@ -956,10 +956,10 @@ function create_new_password_file () {
 
   local name=Administrator
 
-  VAL_NEW_SQL_FILE=$(mktemp --suffix .sql)
+  VAL_ADMIN_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
 
-  cat << EOF > ${VAL_NEW_SQL_FILE}
-UPDATE users SET password = '${VAL_NEW_PASSWORD_HASH}' WHERE name = '${name}';
+  cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
+UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE name = '${name}';
 UPDATE users SET "mustChangePwd" = 't' WHERE name = '${name}';
 EOF
 }
@@ -967,22 +967,22 @@ EOF
 function upload_password_file () {
   debug ${FUNCNAME[0]} "$@"
 
-  VAL_NEW_SQL_REMOTE_FILE=$(mktemp --dry-run --suffix .sql)
+  VAL_ADMIN_SQL_REMOTE_FILE=$(mktemp --dry-run --suffix .sql)
 
-  upload_file "${VAL_NEW_SQL_FILE}" "${VAL_NEW_SQL_REMOTE_FILE}"
-  rm -f "${VAL_NEW_SQL_FILE}"
+  upload_file "${VAL_ADMIN_SQL_LOCAL_FILE}" "${VAL_ADMIN_SQL_REMOTE_FILE}"
+  rm -f "${VAL_ADMIN_SQL_LOCAL_FILE}"
 }
 
 function remote_reset_password () {
   debug ${FUNCNAME[0]} "$@"
 
-  load_remote_sql "${VAL_NEW_SQL_REMOTE_FILE}"
+  load_remote_sql "${VAL_ADMIN_SQL_REMOTE_FILE}"
 }
 
 function display_new_password () {
   debug ${FUNCNAME[0]} "$@"
 
-  echo "${VAL_NEW_PASSWORD}"
+  echo "${VAL_ADMIN_PASSWORD}"
 }
 
 function reset_admin_password () {
@@ -1009,9 +1009,9 @@ function generate_support_password () {
 function create_support_sql_file () {
   debug ${FUNCNAME[0]} "$@"
 
-  VAL_SUPPORT_SQL_FILE=$(mktemp --suffix .sql)
+  VAL_SUPPORT_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
 
-  cat << EOF > ${VAL_SUPPORT_SQL_FILE}
+  cat << EOF > ${VAL_SUPPORT_SQL_LOCAL_FILE}
 INSERT INTO users VALUES('100', 'miki-support@mimix.io','Miki Support', '', '${VAL_SUPPORT_PASSWORD_HASH}', 'f', '', '', '', '', 'America/New_York', 'f', 't', 't', 'f', '2020-11-13T11:19:07.084Z', '2020-11-13T11:19:07.084Z', 'local', 'en', 'markdown', '2020-11-13T11:19:49.393Z', '');
 INSERT INTO "userGroups" VALUES('100', '100', '1');
 EOF
@@ -1022,8 +1022,8 @@ function upload_support_sql_file () {
 
   VAL_SUPPORT_SQL_REMOTE_FILE=$(mktemp --dry-run --suffix .sql)
 
-  upload_file "${VAL_SUPPORT_SQL_FILE}" "${VAL_SUPPORT_SQL_REMOTE_FILE}"
-  rm -f "${VAL_SUPPORT_SQL_FILE}"
+  upload_file "${VAL_SUPPORT_SQL_LOCAL_FILE}" "${VAL_SUPPORT_SQL_REMOTE_FILE}"
+  rm -f "${VAL_SUPPORT_SQL_LOCAL_FILE}"
 }
 
 function remote_create_support_account () {
