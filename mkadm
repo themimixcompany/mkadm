@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.0"
+readonly VERSION="1.4.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -944,14 +944,14 @@ function load_remote_sql () {
   fi
 }
 
-function generate_new_password () {
+function generate_admin_password () {
   debug ${FUNCNAME[0]} "$@"
 
   VAL_ADMIN_PASSWORD="$(goxkcdpwgen -n 2)"
   VAL_ADMIN_PASSWORD_HASH=$(generate_hash "${VAL_ADMIN_PASSWORD}")
 }
 
-function create_new_password_file () {
+function create_admin_sql_file () {
   debug ${FUNCNAME[0]} "$@"
 
   local name=Administrator
@@ -964,7 +964,7 @@ UPDATE users SET "mustChangePwd" = 't' WHERE name = '${name}';
 EOF
 }
 
-function upload_password_file () {
+function upload_admin_sql_file () {
   debug ${FUNCNAME[0]} "$@"
 
   VAL_ADMIN_SQL_REMOTE_FILE=$(mktemp --dry-run --suffix .sql)
@@ -973,13 +973,13 @@ function upload_password_file () {
   rm -f "${VAL_ADMIN_SQL_LOCAL_FILE}"
 }
 
-function remote_reset_password () {
+function remote_reset_admin_password () {
   debug ${FUNCNAME[0]} "$@"
 
   load_remote_sql "${VAL_ADMIN_SQL_REMOTE_FILE}"
 }
 
-function display_new_password () {
+function display_admin_password () {
   debug ${FUNCNAME[0]} "$@"
 
   echo "${VAL_ADMIN_PASSWORD}"
@@ -989,11 +989,11 @@ function reset_admin_password () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_RESET_ADMIN_PASSWORD}" && -n "${OPT_HOST}" ]]; then
-    generate_new_password
-    create_new_password_file
-    upload_password_file
-    remote_reset_password
-    display_new_password
+    generate_admin_password
+    create_admin_sql_file
+    upload_admin_sql_file
+    remote_reset_admin_password
+    display_admin_password
   fi
 
   exit 0
