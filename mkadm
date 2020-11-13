@@ -46,7 +46,7 @@ OPT_ENABLE_WIKI_SSL=false
 OPT_ENABLE_DB_SSL=false
 OPT_CREATE_TARBALL=
 OPT_PGADM_PATH=$(which pgadm)
-OPT_PGSQL_PATH="${SELF_DIR}/bin/pgsql"
+OPT_PGSQL_PATH=$(which pgsql)
 OPT_INSTALL_PATH=/var/miki
 OPT_INSTALL_REMOTELY=
 OPT_REMOVE_SELF_SSH_KEY=
@@ -673,13 +673,13 @@ function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
-    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${OPT_INSTALL_PATH}/bin"
+    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
   fi
 }
 
 function upload_pgsql () {
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
-    run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${OPT_INSTALL_PATH}/bin"
+    run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
   fi
 }
 
@@ -782,6 +782,7 @@ function remote_install () {
     upload_database_init
     upload_pgadm
     upload_pgsql
+
     install_miki
     create_firewall
     display_address
