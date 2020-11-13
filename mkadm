@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.3.14"
+readonly VERSION="1.3.15"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -33,8 +33,14 @@ VAL_PASSWORD_FILE=
 OPT_RESET_ADMIN_PASSWORD=
 VAL_NEW_PASSWORD=
 VAL_NEW_PASSWORD_HASH=
-VAL_NEW_PASSWORD_FILE=
-VAL_REMOTE_NEW_PASSWORD_FILE=
+VAL_NEW_SQL_FILE=
+VAL_NEW_SQL_REMOTE_FILE=
+
+OPT_CREATE_SUPPORT_ACCOUNT=
+VAL_SUPPORT_PASSWORD=
+VAL_SUPPORT_PASSWORD_HASH=
+VAL_SUPPORT_SQL_FILE=
+VAL_SUPPORT_SQL_REMOTE_FILE=
 
 OPT_NAME=
 OPT_MIKI_DIRECTORY=$HOME/miki/miki
@@ -129,7 +135,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:m:w:d:R:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lsc:QS:xr --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:m:w:d:R:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lsc:QS:xrT --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -179,6 +185,7 @@ function parse_arguments () {
       (-S|--sql-file) OPT_SQL_FILE=$2; shift 2 ;;
       (-x|--expunge) OPT_EXPUNGE_INSTANCE=true; shift ;;
       (-r|--reset-admin-password) OPT_RESET_ADMIN_PASSWORD=true; shift ;;
+      (-T|--create-support-account) OPT_CREATE_SUPPORT_ACCOUNT=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -257,6 +264,9 @@ function process_arguments () {
   elif [[ -n "${OPT_RESET_ADMIN_PASSWORD}" ]]; then
     set_name
     reset_admin_password
+  elif [[ -n "${OPT_CREATE_SUPPORT_ACCOUNT}" ]]; then
+    set_name
+    create_support_account
   elif [[ -n "${OPT_INSTALL_REMOTELY}" ]]; then
     check_droplet
   elif [[ -n "${OPT_LIST_INSTANCES}" ]]; then
@@ -946,9 +956,9 @@ function create_new_password_file () {
 
   local name=Administrator
 
-  VAL_NEW_PASSWORD_FILE=$(mktemp --suffix .sql)
+  VAL_NEW_SQL_FILE=$(mktemp --suffix .sql)
 
-  cat << EOF > ${VAL_NEW_PASSWORD_FILE}
+  cat << EOF > ${VAL_NEW_SQL_FILE}
 UPDATE users SET password = '${VAL_NEW_PASSWORD_HASH}' WHERE name = '${name}';
 UPDATE users SET "mustChangePwd" = 't' WHERE name = '${name}';
 EOF
@@ -957,16 +967,16 @@ EOF
 function upload_password_file () {
   debug ${FUNCNAME[0]} "$@"
 
-  VAL_REMOTE_NEW_PASSWORD_FILE=$(mktemp --dry-run --suffix .sql)
+  VAL_NEW_SQL_REMOTE_FILE=$(mktemp --dry-run --suffix .sql)
 
-  upload_file "${VAL_NEW_PASSWORD_FILE}" "${VAL_REMOTE_NEW_PASSWORD_FILE}"
-  rm -f "${VAL_NEW_PASSWORD_FILE}"
+  upload_file "${VAL_NEW_SQL_FILE}" "${VAL_NEW_SQL_REMOTE_FILE}"
+  rm -f "${VAL_NEW_SQL_FILE}"
 }
 
 function remote_reset_password () {
   debug ${FUNCNAME[0]} "$@"
 
-  load_remote_sql "${VAL_REMOTE_NEW_PASSWORD_FILE}"
+  load_remote_sql "${VAL_NEW_SQL_REMOTE_FILE}"
 }
 
 function display_new_password () {
@@ -987,6 +997,50 @@ function reset_admin_password () {
   fi
 
   exit 0
+}
+
+function generate_support_password () {
+  debug ${FUNCNAME[0]} "$@"
+
+  VAL_SUPPORT_PASSWORD="$(goxkcdpwgen -n 2)"
+  VAL_SUPPORT_PASSWORD_HASH=$(generate_hash "${VAL_SUPPORT_PASSWORD}")
+}
+
+function create_support_sql_file () {
+  debug ${FUNCNAME[0]} "$@"
+
+  VAL_SUPPORT_SQL_FILE=$(mktemp --suffix .sql)
+
+  cat << EOF > ${VAL_SUPPORT_SQL_FILE}
+INSERT INTO users VALUES('100', 'miki-support@mimix.io','Miki Support', '', '${VAL_SUPPORT_PASSWORD_HASH}', 'f', '', '', '', '', 'America/New_York', 'f', 't', 't', 'f', '2020-11-13T11:19:07.084Z', '2020-11-13T11:19:07.084Z', 'local', 'en', 'markdown', '2020-11-13T11:19:49.393Z', '');
+INSERT INTO "userGroups" VALUES('100', '100', '1');
+EOF
+}
+
+function upload_support_sql_file () {
+  debug ${FUNCNAME[0]} "$@"
+
+  VAL_SUPPORT_SQL_REMOTE_FILE=$(mktemp --dry-run --suffix .sql)
+
+  upload_file "${VAL_SUPPORT_SQL_FILE}" "${VAL_SUPPORT_SQL_REMOTE_FILE}"
+  rm -f "${VAL_SUPPORT_SQL_FILE}"
+}
+
+function remote_create_support_account () {
+  debug ${FUNCNAME[0]} "$@"
+
+  load_remote_sql "${VAL_SUPPORT_SQL_REMOTE_FILE}"
+}
+
+function create_support_account () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_CREATE_SUPPORT_ACCOUNT}" ]]; then
+    generate_support_password
+    create_support_sql_file
+    upload_support_sql_file
+    remote_create_support_account
+  fi
 }
 
 function remote_load_sql_file () {
