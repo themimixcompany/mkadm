@@ -38,7 +38,7 @@ Before using this script, you must first authenticate with DigitalOcean. To do s
 
 ### <a name="instances">Instances</a>
 
-To create a Miki instance with the following configuration,
+To create an instance with the following configuration,
 
 - name: `goliath`
 - domain: `goliath.streamsharing.io`
@@ -57,11 +57,31 @@ run:
 
     mkadm -in goliath -fA 73.6.24.189.144
 
-When the installation has finished, you’ll see a message containing the IP address of the Miki instance. Use this IP address as the DNS A record for `goliath.streamsharing.io` using your domain registrar.
+When the installation has finished, you’ll see a message containing the IP address of the instance. Use this IP address as the DNS A record for `goliath.streamsharing.io` using your domain registrar.
 
 To do the same, but initialize the database with a PostgreSQL dump, run:
 
     mkadm -in goliath -I ~/miki/dat/mimix-miki.pg
+
+To do the same, but without database initialization, run:
+
+    mkadm -in goliath
+
+To connect to goliath via SSH, run:
+
+    mkadm -sn goliath
+
+To connect to the SQL command line on goliath, run:
+
+    mkadm -n goliath -Q
+
+To load an SQL file, run:
+
+    mkdam -n goliath -S file.sql
+
+To list the contents of the `/tmp` directory on goliath, run:
+
+    mkadm -n goliath -c "ls /tmp"
 
 To explicitly enable SSL on goliath, run:
 
@@ -71,17 +91,13 @@ To change the domain name of goliath to `goliath.mimix.io`, run:
 
     mkadm -n goliath --domain-name goliath.mimix.io
 
-To get the date on goliath, run:
-
-    mkadm -n goliath -c date
-
-To connect to goliath via SSH, run:
-
-    mkadm -sn goliath
-
-To expunge `goliath`, run:
+To expunge goliath, run:
 
     mkadm -xn goliath
+
+To list all the instances, run:
+
+    mkadm -l
 
 
 ### <a name="miscellany">Miscellany</a>
