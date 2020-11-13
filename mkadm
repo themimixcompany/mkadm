@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.3.12"
+readonly VERSION="1.3.13"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -46,6 +46,7 @@ OPT_ENABLE_WIKI_SSL=false
 OPT_ENABLE_DB_SSL=false
 OPT_CREATE_TARBALL=
 OPT_PGADM_PATH=$(which pgadm)
+OPT_PGSQL_PATH="${SELF_DIR}/bin/pgsql"
 OPT_INSTALL_PATH=/var/miki
 OPT_INSTALL_REMOTELY=
 OPT_REMOVE_SELF_SSH_KEY=
@@ -68,6 +69,7 @@ OPT_DISABLE_SSL=
 OPT_DOMAIN_NAME=
 OPT_COMMAND=
 OPT_SSH=
+OPT_SQL=
 OPT_EXPUNGE_INSTANCE=
 OPT_LIST_INSTANCES=
 
@@ -124,7 +126,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:m:w:d:R:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lc:sxr --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,expunge-instance,reset-admin-password -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:m:w:d:R:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lc:sSxr --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,expunge-instance,reset-admin-password -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -170,6 +172,7 @@ function parse_arguments () {
       (-l|--list-instances) OPT_LIST_INSTANCES=true; shift ;;
       (-c|--command) OPT_COMMAND=$2; shift 2 ;;
       (-s|--ssh) OPT_SSH=true; shift ;;
+      (-S|--sql) OPT_SQL=true; shift ;;
       (-x|--expunge) OPT_EXPUNGE_INSTANCE=true; shift ;;
       (-r|--reset-admin-password) OPT_RESET_ADMIN_PASSWORD=true; shift ;;
       (--) shift; break ;;
@@ -257,6 +260,9 @@ function process_arguments () {
   elif [[ -n "${OPT_SSH}" && -n "${OPT_NAME}" ]]; then
     set_name
     connect_ssh
+  elif [[ -n "${OPT_SQL}" && -n "${OPT_NAME}" ]]; then
+    set_name
+    connect_sql
   elif [[ -n "${OPT_COMMAND}" && -n "${OPT_NAME}" ]]; then
     set_name
     send_command
@@ -281,43 +287,45 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-      --help                 Show this help
-      --debug                Enable debugging mode
-      --verbose              Enable verbose output
-      --version              Display program version info
-  -n, --name                 Set the name of the instance
-  -m, --miki-directory       Specify the path of the input source directory
-  -w, --wiki-name            Set wiki name
-  -d, --wiki-domain          Set wiki domain
-  -r, --wiki-resources       Set path of wiki resources
-  -C, --company-name         Set company name
-  -O, --company-domain       Set company domain
-  -V, --package-version      Set version in package.json
-  -e, --enable-wiki-ssl      Enable wiki config SSL
-  -E, --enable-db-ssl        Enable database config SSL
-  -t, --create-tarball       Create a tarball of the input
-  -p, --pgadm-path           Specify the path of the pgadm program
-  -P, --install-path         Specify the installation path of Miki on the instance
-  -i, --install-remotely     Flag to perform remote installation
-  -K, --remove-self-ssh-key  Remove the SSH key of the host from the allowed SSH keys
-  -k, --ssh-keys             Comma-separated list of allowed SSH keys on the instance
-  -D, --droplet-name         Set the name of droplet to manage
-  -B, --database-name        Set the name of the database
-  -U, --database-user        Set the name of the database user
-  -I, --database-init        Initialize the database with a dump
-  -F, --firewall-name        Set the name of firewall for this droplet
-  -A, --firewall-addresses   Comma-separated list of IP addresses to allow on the droplet
-  -P, --firewall-ports       Comma-separated list of allowed ports on the droplet
-  -f, --create-firewall      Create a firewall based from the instance name
-  -H, --host                 Override the name of the remote host
-  -Y, --yaml-filter          Send a YAML filter to an address
-      --enable-ssl           Enable SSL on the remote instance
-      --disable-ssl          Disable SSL on the remote instance
-      --domain-name          Set the domain name of the remote instance
-  -l, --list-instances       List all instances
-  -c, --command              Send an arbitrary command to the instance
-  -s, --ssh                  Connect to the instance via SSH
-  -x, --expunge-instance     Expunge the instance
+      --help                  Show this help
+      --debug                 Enable debugging mode
+      --verbose               Enable verbose output
+      --version               Display program version info
+  -n, --name                  Set the name of the instance
+  -m, --miki-directory        Specify the path of the input source directory
+  -w, --wiki-name             Set wiki name
+  -d, --wiki-domain           Set wiki domain
+  -r, --wiki-resources        Set path of wiki resources
+  -C, --company-name          Set company name
+  -O, --company-domain        Set company domain
+  -V, --package-version       Set version in package.json
+  -e, --enable-wiki-ssl       Enable wiki config SSL
+  -E, --enable-db-ssl         Enable database config SSL
+  -t, --create-tarball        Create a tarball of the input
+  -p, --pgadm-path            Specify the path of the pgadm program
+  -P, --install-path          Specify the installation path of Miki on the instance
+  -i, --install-remotely      Flag to perform remote installation
+  -K, --remove-self-ssh-key   Remove the SSH key of the host from the allowed SSH keys
+  -k, --ssh-keys              Comma-separated list of allowed SSH keys on the instance
+  -D, --droplet-name          Set the name of droplet to manage
+  -B, --database-name         Set the name of the database
+  -U, --database-user         Set the name of the database user
+  -I, --database-init         Initialize the database with a dump
+  -F, --firewall-name         Set the name of firewall for this droplet
+  -A, --firewall-addresses    Comma-separated list of IP addresses to allow on the droplet
+  -P, --firewall-ports        Comma-separated list of allowed ports on the droplet
+  -f, --create-firewall       Create a firewall based from the instance name
+  -H, --host                  Override the name of the remote host
+  -Y, --yaml-filter           Send a YAML filter to an address
+      --enable-ssl            Enable SSL on the remote instance
+      --disable-ssl           Disable SSL on the remote instance
+      --domain-name           Set the domain name of the remote instance
+  -l, --list-instances        List all instances
+  -c, --command               Send an arbitrary command to the instance
+  -s, --ssh                   Connect to the instance via SSH
+  -S, --sql                   Connect to the SQL prompt of the instance
+  -x, --expunge-instance      Expunge the instance
+  -r, --reset-admin-password  Reset the admin password of the instance
 EOF
   exit 0
 }
@@ -665,7 +673,13 @@ function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
-    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
+    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${OPT_INSTALL_PATH}/bin"
+  fi
+}
+
+function upload_pgsql () {
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
+    run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${OPT_INSTALL_PATH}/bin"
   fi
 }
 
@@ -767,6 +781,7 @@ function remote_install () {
 
     upload_database_init
     upload_pgadm
+    upload_pgsql
     install_miki
     create_firewall
     display_address
@@ -836,6 +851,18 @@ function connect_ssh () {
 
   if [[ -n "${address}" ]]; then
     run_ssh "${OPT_DROPLET_USER}@${address}"
+  fi
+
+  exit $?
+}
+
+function connect_sql () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  if [[ -n "${address}" ]]; then
+    run_ssh "${OPT_DROPLET_USER}@${address}" "${OPT_INSTALL_PATH}/bin/pgsql"
   fi
 
   exit $?
