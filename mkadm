@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.1"
+readonly VERSION="1.4.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1012,7 +1012,7 @@ function create_support_sql_file () {
   VAL_SUPPORT_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
 
   cat << EOF > ${VAL_SUPPORT_SQL_LOCAL_FILE}
-INSERT INTO users VALUES('100', 'miki-support@mimix.io','Miki Support', '', '${VAL_SUPPORT_PASSWORD_HASH}', 'f', '', '', '', '', 'America/New_York', 'f', 't', 't', 'f', '2020-11-13T11:19:07.084Z', '2020-11-13T11:19:07.084Z', 'local', 'en', 'markdown', '2020-11-13T11:19:49.393Z', '');
+INSERT INTO users VALUES('100', 'support@mimix.io','Miki Support', '', '${VAL_SUPPORT_PASSWORD_HASH}', 'f', '', '', '', '', 'America/New_York', 'f', 't', 't', 'f', '2020-01-01T00:00:00.00Z', '2020-11-13T11:19:07.084Z', 'local', 'en', 'markdown', '2020-11-13T11:19:49.393Z', '');
 INSERT INTO "userGroups" VALUES('100', '100', '1');
 EOF
 }
