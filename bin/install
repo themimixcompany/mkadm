@@ -141,7 +141,7 @@ function initialize_database () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_DATABASE_INIT}" ]]; then
-    "/usr/local/bin/pgadm" -If "${OPT_DATABASE_INIT}" || true
+    /usr/local/bin/pgadm -If "${OPT_DATABASE_INIT}" || true
     rm -f "${OPT_DATABASE_INIT}"
   fi
 }
@@ -151,7 +151,7 @@ function load_post_sql () {
 
   sleep "${VAL_SLEEP}"
 
-  "/usr/local/bin/pgsql" --file="${VAL_INSTALL_PATH}/sql/post.sql"
+  /usr/local/bin/pgsql --file="${VAL_INSTALL_PATH}/sql/post.sql"
 }
 
 function start_miki_service () {

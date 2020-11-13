@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.3.13"
+readonly VERSION="1.3.14"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -22,6 +22,8 @@ readonly VAL_DEFAULT_PACKAGE_VERSION="1.0.0"
 readonly VAL_MIKI_DOMAIN="miki.mimix.io"
 readonly VAL_RESOURCES_DIR="${SELF_DIR}/resources"
 readonly VAL_DEFAULT_DOMAIN="streamsharing.io"
+readonly VAL_REMOTE_BIN="/usr/local/bin"
+readonly VAL_REMOTE_TMP="/tmp"
 
 VAL_DOMAIN=
 VAL_DROPLET=
@@ -67,9 +69,10 @@ OPT_YAML_FILTER=
 OPT_ENABLE_SSL=
 OPT_DISABLE_SSL=
 OPT_DOMAIN_NAME=
-OPT_COMMAND=
 OPT_SSH=
+OPT_COMMAND=
 OPT_SQL=
+OPT_SQL_FILE=
 OPT_EXPUNGE_INSTANCE=
 OPT_LIST_INSTANCES=
 
@@ -126,7 +129,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:m:w:d:R:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lc:sSxr --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,expunge-instance,reset-admin-password -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:m:w:d:R:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lsc:QS:xr --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -170,9 +173,10 @@ function parse_arguments () {
       (--disable-ssl) OPT_SEND_FILTER=true; OPT_DISABLE_SSL=true; shift ;;
       (--domain-name) OPT_SEND_FILTER=true; OPT_DOMAIN_NAME=$2; shift 2 ;;
       (-l|--list-instances) OPT_LIST_INSTANCES=true; shift ;;
-      (-c|--command) OPT_COMMAND=$2; shift 2 ;;
       (-s|--ssh) OPT_SSH=true; shift ;;
-      (-S|--sql) OPT_SQL=true; shift ;;
+      (-c|--command) OPT_COMMAND=$2; shift 2 ;;
+      (-Q|--sql) OPT_SQL=true; shift ;;
+      (-S|--sql-file) OPT_SQL_FILE=$2; shift 2 ;;
       (-x|--expunge) OPT_EXPUNGE_INSTANCE=true; shift ;;
       (-r|--reset-admin-password) OPT_RESET_ADMIN_PASSWORD=true; shift ;;
       (--) shift; break ;;
@@ -263,6 +267,9 @@ function process_arguments () {
   elif [[ -n "${OPT_SQL}" && -n "${OPT_NAME}" ]]; then
     set_name
     connect_sql
+  elif [[ -n "${OPT_SQL_FILE}" && -n "${OPT_NAME}" ]]; then
+    set_name
+    remote_load_sql_file
   elif [[ -n "${OPT_COMMAND}" && -n "${OPT_NAME}" ]]; then
     set_name
     send_command
@@ -321,9 +328,10 @@ OPTIONS:
       --disable-ssl           Disable SSL on the remote instance
       --domain-name           Set the domain name of the remote instance
   -l, --list-instances        List all instances
-  -c, --command               Send an arbitrary command to the instance
   -s, --ssh                   Connect to the instance via SSH
-  -S, --sql                   Connect to the SQL prompt of the instance
+  -c, --command               Send an arbitrary command to the instance
+  -Q, --sql                   Connect to the SQL prompt of the instance
+  -S, --sql-file              Specify the SQL file to upload to the instance
   -x, --expunge-instance      Expunge the instance
   -r, --reset-admin-password  Reset the admin password of the instance
 EOF
@@ -665,7 +673,7 @@ function upload_database_init () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_DATABASE_INIT}" ]]; then
-    run_scp "${OPT_DATABASE_INIT}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/tmp"
+    run_scp "${OPT_DATABASE_INIT}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${VAL_REMOTE_TMP}"
   fi
 }
 
@@ -673,13 +681,13 @@ function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
-    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
+    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${VAL_REMOTE_BIN}"
   fi
 }
 
 function upload_pgsql () {
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
-    run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:/usr/local/bin"
+    run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${VAL_REMOTE_BIN}"
   fi
 }
 
@@ -691,7 +699,7 @@ function install_miki () {
   local cmd=
 
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok && [[ -n "${OPT_DATABASE_INIT}" ]]; then
-    cmd="${base_cmd} -I /tmp/$(basename ${OPT_DATABASE_INIT})"
+    cmd="${base_cmd} -I ${VAL_REMOTE_TMP}/$(basename ${OPT_DATABASE_INIT})"
   else
     cmd="${base_cmd}"
   fi
@@ -863,7 +871,7 @@ function connect_sql () {
   local address=$(get_droplet_address "${OPT_HOST}")
 
   if [[ -n "${address}" ]]; then
-    run_ssh "${OPT_DROPLET_USER}@${address}" "${OPT_INSTALL_PATH}/bin/pgsql"
+    run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgsql"
   fi
 
   exit $?
@@ -899,26 +907,50 @@ function list_instances () {
   exit 0
 }
 
+function generate_hash () {
+  debug ${FUNCNAME[0]} "$@"
+
+  echo "${1}" | htpasswd -niBC 10 "" | tr -d ':\n'
+}
+
+function upload_file () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+  local local_file="${1}"
+  local remote_file="${2}"
+
+  run_scp -q "${local_file}" "${OPT_DROPLET_USER}@${address}:${remote_file}"
+}
+
+function load_remote_sql () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+  local file="${1}"
+
+  if [[ -n "${address}" ]]; then
+    run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgsql -f ${file}; rm -f ${file}"
+  fi
+}
+
 function generate_new_password () {
   debug ${FUNCNAME[0]} "$@"
 
   VAL_NEW_PASSWORD="$(goxkcdpwgen -n 2)"
-}
-
-function generate_new_password_hash () {
-  debug ${FUNCNAME[0]} "$@"
-
-  VAL_NEW_PASSWORD_HASH=$(echo "${VAL_NEW_PASSWORD}" | htpasswd -niBC 10 "" | tr -d ':\n')
+  VAL_NEW_PASSWORD_HASH=$(generate_hash "${VAL_NEW_PASSWORD}")
 }
 
 function create_new_password_file () {
   debug ${FUNCNAME[0]} "$@"
 
+  local name=Administrator
+
   VAL_NEW_PASSWORD_FILE=$(mktemp --suffix .sql)
 
   cat << EOF > ${VAL_NEW_PASSWORD_FILE}
-UPDATE users SET password = '${VAL_NEW_PASSWORD_HASH}' WHERE name = 'Administrator';
-UPDATE users SET "mustChangePwd" = 't' WHERE name = 'Administrator';
+UPDATE users SET password = '${VAL_NEW_PASSWORD_HASH}' WHERE name = '${name}';
+UPDATE users SET "mustChangePwd" = 't' WHERE name = '${name}';
 EOF
 }
 
@@ -927,43 +959,14 @@ function upload_password_file () {
 
   VAL_REMOTE_NEW_PASSWORD_FILE=$(mktemp --dry-run --suffix .sql)
 
-  local address=$(get_droplet_address "${OPT_HOST}")
-
-  run_scp -q "${VAL_NEW_PASSWORD_FILE}" \
-          "${OPT_DROPLET_USER}@${address}:${VAL_REMOTE_NEW_PASSWORD_FILE}"
-}
-
-function load_remote_sql () {
-  debug ${FUNCNAME[0]} "$@"
-
-  local address=$(get_droplet_address "${OPT_HOST}")
-  local file=${1}
-
-  if [[ -n "${address}" ]]; then
-    run_ssh "${OPT_DROPLET_USER}@${address}" "sudo PGPASSWORD=\$(yq -y '.db.pass' /var/miki/config.yml | sed 2d) psql --host=localhost --dbname=defaultdb --username=doadmin --file=${file} &> /dev/null"
-  fi
+  upload_file "${VAL_NEW_PASSWORD_FILE}" "${VAL_REMOTE_NEW_PASSWORD_FILE}"
+  rm -f "${VAL_NEW_PASSWORD_FILE}"
 }
 
 function remote_reset_password () {
   debug ${FUNCNAME[0]} "$@"
 
   load_remote_sql "${VAL_REMOTE_NEW_PASSWORD_FILE}"
-}
-
-function remote_delete_reset_file () {
-  debug ${FUNCNAME[0]} "$@"
-
-  local address=$(get_droplet_address "${OPT_HOST}")
-
-  if [[ -n "${address}" ]]; then
-    run_ssh "${OPT_DROPLET_USER}@${address}" "rm -f ${VAL_REMOTE_NEW_PASSWORD_FILE}"
-  fi
-}
-
-function delete_reset_file () {
-  debug ${FUNCNAME[0]} "$@"
-
-  rm -f "${VAL_NEW_PASSWORD_FILE}"
 }
 
 function display_new_password () {
@@ -977,13 +980,23 @@ function reset_admin_password () {
 
   if [[ -n "${OPT_RESET_ADMIN_PASSWORD}" && -n "${OPT_HOST}" ]]; then
     generate_new_password
-    generate_new_password_hash
     create_new_password_file
     upload_password_file
     remote_reset_password
-    remote_delete_reset_file
-    delete_reset_file
     display_new_password
+  fi
+
+  exit 0
+}
+
+function remote_load_sql_file () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local remote_file=$(mktemp --dry-run --suffix .sql)
+
+  if [[ -n "${OPT_SQL_FILE}" && -f "${OPT_SQL_FILE}" && -n "${OPT_HOST}" ]]; then
+    upload_file "${OPT_SQL_FILE}" "${remote_file}"
+    load_remote_sql "${remote_file}"
   fi
 
   exit 0
