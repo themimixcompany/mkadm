@@ -83,14 +83,6 @@ To list the contents of the `/tmp` directory on goliath, run:
 
     mkadm -n goliath -c "ls /tmp"
 
-To explicitly enable SSL on goliath, run:
-
-    mkadm -n goliath --enable-ssl
-
-To change the domain name of goliath to `goliath.mimix.io`, run:
-
-    mkadm -n goliath --domain-name goliath.mimix.io
-
 To expunge goliath, run:
 
     mkadm -xn goliath
