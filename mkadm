@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.4"
+readonly VERSION="1.4.5"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -417,7 +417,7 @@ function initialize () {
   if [[ -f "package.json" && "$(jq -r '.name' package.json)" == "wiki" ]]; then
     return 0
   else
-    error "!"
+    error "The current directory does not contain the correct contents. Aborting."
   fi
 }
 
