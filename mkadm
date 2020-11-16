@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.2"
+readonly VERSION="1.4.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -24,6 +24,7 @@ readonly VAL_RESOURCES_DIR="${SELF_DIR}/resources"
 readonly VAL_DEFAULT_DOMAIN="streamsharing.io"
 readonly VAL_REMOTE_BIN="/usr/local/bin"
 readonly VAL_REMOTE_TMP="/tmp"
+readonly VAL_MIKI_REPOSITORY="https://github.com/themimixcompany/wiki"
 
 VAL_DOMAIN=
 VAL_DROPLET=
@@ -43,27 +44,26 @@ VAL_SUPPORT_SQL_LOCAL_FILE=
 VAL_SUPPORT_SQL_REMOTE_FILE=
 
 OPT_NAME=
-OPT_MIKI_DIRECTORY=$HOME/miki/miki
-OPT_WIKI_NAME=miki
+OPT_MIKI_DIRECTORY=
+OPT_WIKI_NAME="miki"
 OPT_WIKI_DOMAIN=
-OPT_WIKI_RESOURCES=/_assets/svg
-OPT_COMPANY_NAME=miki
-OPT_COMPANY_DOMAIN=mimix.io
+OPT_WIKI_RESOURCES="/_assets/svg"
+OPT_COMPANY_NAME="miki"
+OPT_COMPANY_DOMAIN="mimix.io"
 OPT_PACKAGE_VERSION=
-OPT_ENABLE_WIKI_SSL=false
-OPT_ENABLE_DB_SSL=false
-OPT_CREATE_TARBALL=
-OPT_PGADM_PATH=$(which pgadm)
-OPT_PGSQL_PATH=$(which pgsql)
-OPT_INSTALL_PATH=/var/miki
+OPT_ENABLE_WIKI_SSL="false"
+OPT_ENABLE_DB_SSL="false"
+OPT_PGADM_PATH="$(which pgadm)"
+OPT_PGSQL_PATH="$(which pgsql)"
+OPT_INSTALL_PATH="/var/miki"
 OPT_INSTALL_REMOTELY=
 OPT_REMOVE_SELF_SSH_KEY=
 OPT_SSH_KEYS=
-OPT_DROPLET_USER=root
+OPT_DROPLET_USER="root"
 OPT_DROPLET_NAME=
 OPT_DROPLET_ADDRESS=
-OPT_DATABASE_NAME=defaultdb
-OPT_DATABASE_USER=doadmin
+OPT_DATABASE_NAME="defaultdb"
+OPT_DATABASE_USER="doadmin"
 OPT_DATABASE_INIT=
 OPT_FIREWALL_NAME=
 OPT_FIREWALL_ADDRESSES=
@@ -81,6 +81,8 @@ OPT_SQL=
 OPT_SQL_FILE=
 OPT_EXPUNGE_INSTANCE=
 OPT_LIST_INSTANCES=
+OPT_POWER_ON=
+OPT_POWER_OFF=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -135,7 +137,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:m:w:d:R:C:O:V:eEtp:P:iKk:D:B:U:I:F:A:P:fH:Y:lsc:QS:xrT --longoptions help,debug,verbose,version,name:,miki-directory:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,create-tarball,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:w:d:R:V:eEp:P:iKk:D:B:U:I:F:A:P:fH:Y:lsc:QS:xrtoO --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -150,16 +152,14 @@ function parse_arguments () {
       (--verbose) OPT_VERBOSE=true; shift ;;
       (--version) OPT_VERSION=true; shift ;;
       (-n|--name) OPT_NAME=$2; shift 2 ;;
-      (-m|--miki-directory) OPT_MIKI_DIRECTORY=$2; shift 2 ;;
       (-w|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (-d|--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
       (-R|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
-      (-C|--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
-      (-O|--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
+      (--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
+      (--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
       (-V|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
       (-e|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (-E|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
-      (-t|--create-tarball) OPT_CREATE_TARBALL=true; shift ;;
       (-p|--pgadm-path) OPT_PGADM_PATH=$2; shift 2 ;;
       (-P|--install-path) OPT_MAKE_TARBALL=true; OPT_INSTALL_PATH=$2; shift 2 ;;
       (-i|--install-remotely) OPT_MAKE_TARBALL=true; OPT_INSTALL_REMOTELY=true; shift ;;
@@ -185,17 +185,37 @@ function parse_arguments () {
       (-S|--sql-file) OPT_SQL_FILE=$2; shift 2 ;;
       (-x|--expunge) OPT_EXPUNGE_INSTANCE=true; shift ;;
       (-r|--reset-admin-password) OPT_RESET_ADMIN_PASSWORD=true; shift ;;
-      (-T|--create-support-account) OPT_CREATE_SUPPORT_ACCOUNT=true; shift ;;
+      (-t|--create-support-account) OPT_CREATE_SUPPORT_ACCOUNT=true; shift ;;
+      (-o|--power-on) OPT_POWER_ON=true; shift ;;
+      (-O|--power-off) OPT_POWER_OFF=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
   done
 }
 
+function get_droplet_id () {
+  debug ${FUNCNAME[0]} "$@"
+
+  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $1}'
+}
+
+function get_droplet_name () {
+  debug ${FUNCNAME[0]} "$@"
+
+  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $2}'
+}
+
+function get_droplet_address () {
+  debug ${FUNCNAME[0]} "$@"
+
+  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $3}'
+}
+
 function make_miki_www_name () {
   debug ${FUNCNAME[0]} "$@"
 
-  echo "${VAL_BASE_NAME}-${OPT_NAME}-${VAL_WWW_NAME}"
+  echo "${VAL_BASE_NAME}-${OPT_NAME}"
 }
 
 function make_miki_fw_name () {
@@ -287,7 +307,14 @@ function process_arguments () {
     set_name
     expunge_instance
   elif [[ -n "${OPT_NAME}" && -n "${OPT_SEND_FILTER}" ]]; then
+    set_name
     send_filter
+  elif [[ -n "${OPT_POWER_ON}" ]]; then
+    set_name
+    power_on_droplet
+  elif [[ -n "${OPT_POWER_OFF}" ]]; then
+    set_name
+    power_off_droplet
   elif [[ ! "$(basename ${OPT_MIKI_DIRECTORY})" == "miki" ]]; then
     display_usage
   elif [[ -z "${OPT_WIKI_NAME}" || -z "${OPT_WIKI_RESOURCES}" || -z "${OPT_COMPANY_NAME}" || -z "${OPT_COMPANY_DOMAIN}" ]]; then
@@ -304,46 +331,47 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-      --help                  Show this help
-      --debug                 Enable debugging mode
-      --verbose               Enable verbose output
-      --version               Display program version info
-  -n, --name                  Set the name of the instance
-  -m, --miki-directory        Specify the path of the input source directory
-  -w, --wiki-name             Set wiki name
-  -d, --wiki-domain           Set wiki domain
-  -r, --wiki-resources        Set path of wiki resources
-  -C, --company-name          Set company name
-  -O, --company-domain        Set company domain
-  -V, --package-version       Set version in package.json
-  -e, --enable-wiki-ssl       Enable wiki config SSL
-  -E, --enable-db-ssl         Enable database config SSL
-  -t, --create-tarball        Create a tarball of the input
-  -p, --pgadm-path            Specify the path of the pgadm program
-  -P, --install-path          Specify the installation path of Miki on the instance
-  -i, --install-remotely      Flag to perform remote installation
-  -K, --remove-self-ssh-key   Remove the SSH key of the host from the allowed SSH keys
-  -k, --ssh-keys              Comma-separated list of allowed SSH keys on the instance
-  -D, --droplet-name          Set the name of droplet to manage
-  -B, --database-name         Set the name of the database
-  -U, --database-user         Set the name of the database user
-  -I, --database-init         Initialize the database with a dump
-  -F, --firewall-name         Set the name of firewall for this droplet
-  -A, --firewall-addresses    Comma-separated list of IP addresses to allow on the droplet
-  -P, --firewall-ports        Comma-separated list of allowed ports on the droplet
-  -f, --create-firewall       Create a firewall based from the instance name
-  -H, --host                  Override the name of the remote host
-  -Y, --yaml-filter           Send a YAML filter to an address
-      --enable-ssl            Enable SSL on the remote instance
-      --disable-ssl           Disable SSL on the remote instance
-      --domain-name           Set the domain name of the remote instance
-  -l, --list-instances        List all instances
-  -s, --ssh                   Connect to the instance via SSH
-  -c, --command               Send an arbitrary command to the instance
-  -Q, --sql                   Connect to the SQL prompt of the instance
-  -S, --sql-file              Specify the SQL file to upload to the instance
-  -x, --expunge-instance      Expunge the instance
-  -r, --reset-admin-password  Reset the admin password of the instance
+      --help                    Show this help
+      --debug                   Enable debugging mode
+      --verbose                 Enable verbose output
+      --version                 Display program version info
+  -n, --name                    Set the name of the instance
+  -w, --wiki-name               Set wiki name
+  -d, --wiki-domain             Set wiki domain
+  -R, --wiki-resources          Set path of wiki resources
+      --company-name            Set company name
+      --company-domain          Set company domain
+  -V, --package-version         Set version in package.json
+  -e, --enable-wiki-ssl         Enable wiki config SSL
+  -E, --enable-db-ssl           Enable database config SSL
+  -p, --pgadm-path              Specify the path of the pgadm program
+  -P, --install-path            Specify the installation path of Miki on the instance
+  -i, --install-remotely        Flag to perform remote installation
+  -K, --remove-self-ssh-key     Remove the SSH key of the host from the allowed SSH keys
+  -k, --ssh-keys                Comma-separated list of allowed SSH keys on the instance
+  -D, --droplet-name            Set the name of droplet to manage
+  -B, --database-name           Set the name of the database
+  -U, --database-user           Set the name of the database user
+  -I, --database-init           Initialize the database with a dump
+  -F, --firewall-name           Set the name of firewall for this droplet
+  -A, --firewall-addresses      Comma-separated list of IP addresses to allow on the droplet
+  -P, --firewall-ports          Comma-separated list of allowed ports on the droplet
+  -f, --create-firewall         Create a firewall based from the instance name
+  -H, --host                    Override the name of the remote host
+  -Y, --yaml-filter             Send a YAML filter to an address
+      --enable-ssl              Enable SSL on the remote instance
+      --disable-ssl             Disable SSL on the remote instance
+      --domain-name             Set the domain name of the remote instance
+  -l, --list-instances          List all instances
+  -s, --ssh                     Connect to the instance via SSH
+  -c, --command                 Send an arbitrary command to the instance
+  -Q, --sql                     Connect to the SQL prompt of the instance
+  -S, --sql-file                Specify the SQL file to upload to the instance
+  -x, --expunge-instance        Expunge the instance
+  -r, --reset-admin-password    Reset the admin password of the instance
+  -t, --create-support-account  Create a support account on the instance
+  -o, --power-on                Turn on the droplet
+  -O, --power-off               Turn off the droplet
 EOF
   exit 0
 }
@@ -357,9 +385,33 @@ EOF
   exit 0
 }
 
+function create_miki_directory () {
+  debug ${FUNCNAME[0]} "$@"
+
+  OPT_MIKI_DIRECTORY="$(mktemp -d)/miki"
+}
+
+function clone_repository () {
+  debug ${FUNCNAME[0]} "$@"
+
+  git clone "${VAL_MIKI_REPOSITORY}" "${OPT_MIKI_DIRECTORY}"
+}
+
+function delete_miki_directory () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -d "${OPT_MIKI_DIRECTORY}" ]]; then
+    rm -rf "${OPT_MIKI_DIRECTORY}"
+  fi
+}
+
 function initialize () {
   debug ${FUNCNAME[0]} "$@"
 
+  display_banner "Performing initialization ..."
+
+  create_miki_directory
+  clone_repository
   push "${OPT_MIKI_DIRECTORY}"
 
   if [[ -f "package.json" && "$(jq -r '.name' package.json)" == "wiki" ]]; then
@@ -375,20 +427,26 @@ function reset_repository () {
   git reset --hard "${VAL_BASE_COMMIT}" &> /dev/null
 }
 
+function npm_install () {
+  debug ${FUNCNAME[0]} "$@"
+
+  npm install
+}
+
 function delete_files () {
   debug ${FUNCNAME[0]} "$@"
 
-  rm -f README.md SECURITY.md
-  rm -rf .github
+  # rm -f README.md
+  # rm -f SECURITY.md
+  # rm -rf .github
 
-  rm -f assets/favicon.ico
-  rm -rf assets/favicons
-  rm -f assets/svg/logo-wikijs.svg
-  rm -f assets/svg/logo-wikijs-full.svg
+  # rm -f assets/favicon.ico
+  # rm -rf assets/favicons
+  # rm -f assets/svg/logo-wikijs.svg
+  # rm -f assets/svg/logo-wikijs-full.svg
 
-  rm -f assets/js/admin.js
-
-  rm -rf assets/img/splash
+  # rm -f assets/js/admin.js
+  # rm -rf assets/img/splash
 
   rm -rf db
   rm -rf data
@@ -485,13 +543,19 @@ function update_package_json () {
   mv -f ${temp} package.json
 }
 
+function display_banner () {
+  local message="${1}"
+
+  echo "================================================================================"
+  echo " ${message}"
+  echo "================================================================================"
+
+}
+
 function yarn_build () {
   debug ${FUNCNAME[0]} "$@"
 
-  echo "================================================================================"
-  echo " Compiling sources ..."
-  echo "================================================================================"
-
+  display_banner "Compiling sources ..."
   yarn build
 }
 
@@ -604,10 +668,15 @@ function create_tarball () {
 
   pop
 
-  if [[ -n "${OPT_CREATE_TARBALL}" || -n "${VAL_DROPLET}" ]]; then
+  if [[ -d "${OPT_MIKI_DIRECTORY}" ]]; then
     tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" \
         -czf "${file}" --exclude ".git" \
         "$(basename ${OPT_MIKI_DIRECTORY})"
+    # create tarball and delete miki directory if local install only
+    # create tarball and do not delete miki directory if remote instal
+    # ...
+  else
+    error "Cannot create a tarball. Aborting."
   fi
 }
 
@@ -627,7 +696,7 @@ function self_ssh_key () {
   fi
 }
 
-function set_keys () {
+function set_ssh_keys () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -z "${OPT_REMOVE_SELF_SSH_KEY}" ]]; then
@@ -650,7 +719,7 @@ function create_droplet () {
   fi
 }
 
-function droplet_ok () {
+function droplet_ready_p () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${VAL_DROPLET}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
@@ -667,7 +736,7 @@ function upload_tarball () {
 
   sleep "${VAL_SLEEP}"
 
-  if [[ -f "${file}" && -n "${OPT_INSTALL_PATH}" && -n "${OPT_DROPLET_USER}" ]] && droplet_ok; then
+  if [[ -f "${file}" && -n "${OPT_INSTALL_PATH}" && -n "${OPT_DROPLET_USER}" ]] && droplet_ready_p; then
     run_scp "${file}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
   fi
 }
@@ -690,13 +759,13 @@ function upload_database_init () {
 function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
     run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${VAL_REMOTE_BIN}"
   fi
 }
 
 function upload_pgsql () {
-  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
     run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${VAL_REMOTE_BIN}"
   fi
 }
@@ -708,13 +777,13 @@ function install_miki () {
   local base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_PATH}/bin/install -i ${OPT_INSTALL_PATH}"
   local cmd=
 
-  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok && [[ -n "${OPT_DATABASE_INIT}" ]]; then
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p && [[ -n "${OPT_DATABASE_INIT}" ]]; then
     cmd="${base_cmd} -I ${VAL_REMOTE_TMP}/$(basename ${OPT_DATABASE_INIT})"
   else
     cmd="${base_cmd}"
   fi
 
-  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ok; then
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
     run_ssh "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" "${cmd}"
   fi
 
@@ -734,9 +803,17 @@ function display_address () {
   debug ${FUNCNAME[0]} "$@"
 
   echo -e "\n"
-  echo "================================================================================"
-  echo " Your new Miki instance is now available at http://${OPT_DROPLET_ADDRESS}."
-  echo "================================================================================"
+  display_banner "Your new Miki instance is now available at http://${OPT_DROPLET_ADDRESS}."
+}
+
+function local_install_p () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -z "${OPT_INSTALL_REMOTELY}" ]]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 function local_install () {
@@ -744,6 +821,7 @@ function local_install () {
 
   initialize
   reset_repository
+  npm_install
   delete_files
   create_readme
   create_local_config_yml
@@ -757,12 +835,6 @@ function local_install () {
   create_db_directory
 
   create_tarball
-}
-
-function get_droplet_name () {
-  debug ${FUNCNAME[0]} "$@"
-
-  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $2}'
 }
 
 function check_droplet () {
@@ -789,10 +861,11 @@ function remote_install () {
     create_init_sql
     #create_post_sql
     delete_password_file
-
     copy_bin
+
     create_tarball
-    set_keys
+
+    set_ssh_keys
     create_droplet
     upload_tarball
     delete_tarball
@@ -805,12 +878,6 @@ function remote_install () {
     create_firewall
     display_address
   fi
-}
-
-function get_droplet_address () {
-  debug ${FUNCNAME[0]} "$@"
-
-  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $3}'
 }
 
 function send_yaml_filter () {
@@ -853,11 +920,22 @@ function set_ssl_domain () {
 function send_filter () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_HOST}" ]]; then
-    [[ -n "${OPT_YAML_FILTER}" ]] && send_yaml_filter
-    [[ -n "${OPT_ENABLE_SSL}" ]] && enable_ssl
-    [[ -n "${OPT_DISABLE_SSL}" ]] && disable_ssl
-    [[ -n "${OPT_DOMAIN_NAME}" ]] && set_ssl_domain
+  if [[ -n "${OPT_NAME}" ]]; then
+    if [[ -n "${OPT_YAML_FILTER}" ]]; then
+      send_yaml_filter
+    fi
+
+    if [[ -n "${OPT_ENABLE_SSL}" ]]; then
+      enable_ssl
+    fi
+
+    if [[ -n "${OPT_DISABLE_SSL}" ]];then
+      disable_ssl
+    fi
+
+    if [[ -n "${OPT_DOMAIN_NAME}" ]]; then
+      set_ssl_domain
+    fi
   fi
 
   exit $?
@@ -1063,6 +1141,26 @@ function remote_load_sql_file () {
   fi
 
   exit 0
+}
+
+function power_on_droplet () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local id=$(get_droplet_id "${OPT_HOST}")
+
+  doctl compute droplet-action power-on "${id}"
+
+  exit $?
+}
+
+function power_off_droplet () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local id=$(get_droplet_id "${OPT_HOST}")
+
+  doctl compute droplet-action power-off "${id}"
+
+  exit $?
 }
 
 function main () {
