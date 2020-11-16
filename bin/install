@@ -110,6 +110,7 @@ function install_node_js () {
 
   curl -sL https://deb.nodesource.com/setup_15.x | sudo -E bash -
   apt-get install -y nodejs build-essential software-properties-common
+  apt-get install -y rlwrap
 }
 
 function install_postgres () {
