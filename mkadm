@@ -388,7 +388,7 @@ EOF
 function create_miki_directory () {
   debug ${FUNCNAME[0]} "$@"
 
-  OPT_MIKI_DIRECTORY="$(mktemp -d)/miki"
+  OPT_MIKI_DIRECTORY="$(mktemp -d --suffix .miki)/miki"
 }
 
 function clone_repository () {
@@ -435,18 +435,6 @@ function npm_install () {
 
 function delete_files () {
   debug ${FUNCNAME[0]} "$@"
-
-  # rm -f README.md
-  # rm -f SECURITY.md
-  # rm -rf .github
-
-  # rm -f assets/favicon.ico
-  # rm -rf assets/favicons
-  # rm -f assets/svg/logo-wikijs.svg
-  # rm -f assets/svg/logo-wikijs-full.svg
-
-  # rm -f assets/js/admin.js
-  # rm -rf assets/img/splash
 
   rm -rf db
   rm -rf data
@@ -672,9 +660,11 @@ function create_tarball () {
     tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" \
         -czf "${file}" --exclude ".git" \
         "$(basename ${OPT_MIKI_DIRECTORY})"
-    # create tarball and delete miki directory if local install only
-    # create tarball and do not delete miki directory if remote instal
-    # ...
+    if [[ -z "${OPT_INSTALL_REMOTELY}" ]]; then
+      delete_miki_directory
+    else
+      return 0
+    fi
   else
     error "Cannot create a tarball. Aborting."
   fi
@@ -802,7 +792,6 @@ function create_firewall () {
 function display_address () {
   debug ${FUNCNAME[0]} "$@"
 
-  echo -e "\n"
   display_banner "Your new Miki instance is now available at http://${OPT_DROPLET_ADDRESS}."
 }
 
@@ -864,6 +853,7 @@ function remote_install () {
     copy_bin
 
     create_tarball
+    delete_miki_directory
 
     set_ssh_keys
     create_droplet
