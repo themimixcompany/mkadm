@@ -364,7 +364,7 @@ OPTIONS:
       --domain-name             Set the domain name of the remote instance
   -l, --list-instances          List all instances
   -s, --ssh                     Connect to the instance via SSH
-  -c, --command                 Send an arbitrary command to the instance
+  -c, --command                 Run an arbitrary command to the instance
   -Q, --sql                     Connect to the SQL prompt of the instance
   -S, --sql-file                Specify the SQL file to upload to the instance
   -x, --expunge-instance        Expunge the instance
