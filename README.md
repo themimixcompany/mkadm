@@ -87,6 +87,14 @@ To expunge goliath, run:
 
     mkadm -xn goliath
 
+To create a database dump from goliath, run:
+
+    mkadm -n goliath --export-dump file.pg
+
+To upload a database dump to goliath, run:
+
+    mkadm -n goliath --import-dump file.pg
+
 To list all the instances, run:
 
     mkadm -l
