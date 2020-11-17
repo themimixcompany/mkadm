@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.7"
+readonly VERSION="1.4.8"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -72,6 +72,7 @@ OPT_CREATE_FIREWALL=
 OPT_HOST=
 OPT_SEND_FILTER=
 OPT_YAML_FILTER=
+OPT_QUERY_FILTER=
 OPT_ENABLE_SSL=
 OPT_DISABLE_SSL=
 OPT_DOMAIN_NAME=
@@ -141,7 +142,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:V:eEp:P:iKk:D:B:U:I:F:A:P:fH:Y:lsc:QS:xrtoO --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:V:eEp:P:iKk:D:B:U:I:F:A:P:fH:Y:y:lsc:QS:xrtoO --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -178,7 +179,8 @@ function parse_arguments () {
       (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
       (-f|--create-firewall) OPT_CREATE_FIREWALL=true; shift ;;
       (-H|--host) OPT_HOST=$2; shift 2 ;;
-      (-Y|--yaml-filter) OPT_SEND_FILTER=true; OPT_YAML_FILTER=$2; shift 2 ;;
+      (-Y|--send-filter) OPT_SEND_FILTER=true; OPT_YAML_FILTER=$2; shift 2 ;;
+      (-y|--query-filter) OPT_QUERY_FILTER=$2; shift 2 ;;
       (--enable-ssl) OPT_SEND_FILTER=true; OPT_ENABLE_SSL=true; shift ;;
       (--disable-ssl) OPT_SEND_FILTER=true; OPT_DISABLE_SSL=true; shift ;;
       (--domain-name) OPT_SEND_FILTER=true; OPT_DOMAIN_NAME=$2; shift 2 ;;
@@ -323,6 +325,9 @@ function process_arguments () {
   elif [[ -n "${OPT_NAME}" && -n "${OPT_SEND_FILTER}" ]]; then
     set_name
     send_filter
+  elif [[ -n "${OPT_NAME}" && -n "${OPT_QUERY_FILTER}" ]]; then
+    set_name
+    query_filter
   elif [[ -n "${OPT_POWER_ON}" ]]; then
     set_name
     power_on_droplet
@@ -335,7 +340,7 @@ function process_arguments () {
   elif [[ -n "${OPT_RESTART_MACHINE}" ]]; then
     set_name
     restart_machine
-  elif [[ ! "$(basename ${OPT_MIKI_DIRECTORY})" == "miki" ]]; then
+  elif [[ -n "${OPT_MIKI_DIRECTORY}" && ! "$(basename ${OPT_MIKI_DIRECTORY})" == "miki" ]]; then
     display_usage
   elif [[ -z "${OPT_WIKI_NAME}" || -z "${OPT_WIKI_RESOURCES}" || -z "${OPT_COMPANY_NAME}" || -z "${OPT_COMPANY_DOMAIN}" ]]; then
     display_usage
@@ -760,6 +765,8 @@ function delete_tarball () {
 
   local directory="$(dirname ${OPT_MIKI_DIRECTORY})"
   local file="$(basename ${OPT_MIKI_DIRECTORY}).tar.gz"
+
+  rm -f "$(basename ${OPT_MIKI_DIRECTORY}).tar.gz"
 }
 
 function upload_database_init () {
@@ -902,7 +909,7 @@ function send_yaml_filter () {
   if [[ -n "${filter}" && -n "${OPT_HOST}" ]]; then
     for address in $(get_droplet_address "${OPT_HOST}"); do
       run_ssh "${OPT_DROPLET_USER}@${address}" \
-              "yq -iy \"${filter}\" /var/miki/config.yml; systemctl restart miki.service"
+              "yq -iy \"${filter}\" /var/miki/config.yml"
     done
   fi
 }
@@ -950,6 +957,22 @@ function send_filter () {
     if [[ -n "${OPT_DOMAIN_NAME}" ]]; then
       set_ssl_domain
     fi
+  fi
+
+  exit $?
+}
+
+function query_filter () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local filter="${OPT_QUERY_FILTER}"
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  if [[ -n "${filter}" && -n "${OPT_HOST}" ]]; then
+    for address in $(get_droplet_address "${OPT_HOST}"); do
+      run_ssh "${OPT_DROPLET_USER}@${address}" \
+              "yq -r ${filter} /var/miki/config.yml"
+    done
   fi
 
   exit $?
@@ -1160,9 +1183,7 @@ function remote_load_sql_file () {
 function power_on_droplet () {
   debug ${FUNCNAME[0]} "$@"
 
-  local id=$(get_droplet_id "${OPT_HOST}")
-
-  doctl compute droplet-action power-on "${id}"
+  doadm -dn "${OPT_HOST}" --power-on
 
   exit $?
 }
@@ -1170,9 +1191,7 @@ function power_on_droplet () {
 function power_off_droplet () {
   debug ${FUNCNAME[0]} "$@"
 
-  local id=$(get_droplet_id "${OPT_HOST}")
-
-  doctl compute droplet-action power-off "${id}"
+  doadm -dn "${OPT_HOST}" --power-off
 
   exit $?
 }
