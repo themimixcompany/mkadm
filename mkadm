@@ -83,6 +83,10 @@ OPT_EXPUNGE_INSTANCE=
 OPT_LIST_INSTANCES=
 OPT_POWER_ON=
 OPT_POWER_OFF=
+OPT_IMPORT_DUMP=
+OPT_EXPORT_DUMP=
+OPT_RESTART_MIKI=
+OPT_RESTART_MACHINE=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -137,7 +141,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:w:d:R:V:eEp:P:iKk:D:B:U:I:F:A:P:fH:Y:lsc:QS:xrtoO --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:V:eEp:P:iKk:D:B:U:I:F:A:P:fH:Y:lsc:QS:xrtoO --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,yaml-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -152,9 +156,9 @@ function parse_arguments () {
       (--verbose) OPT_VERBOSE=true; shift ;;
       (--version) OPT_VERSION=true; shift ;;
       (-n|--name) OPT_NAME=$2; shift 2 ;;
-      (-w|--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
-      (-d|--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
-      (-R|--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
+      (--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
+      (--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
+      (--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
       (--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
       (--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
       (-V|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
@@ -188,6 +192,10 @@ function parse_arguments () {
       (-t|--create-support-account) OPT_CREATE_SUPPORT_ACCOUNT=true; shift ;;
       (-o|--power-on) OPT_POWER_ON=true; shift ;;
       (-O|--power-off) OPT_POWER_OFF=true; shift ;;
+      (--import-dump) OPT_IMPORT_DUMP=$2; shift 2 ;;
+      (--export-dump) OPT_EXPORT_DUMP=$2; shift 2 ;;
+      (--restart-miki) OPT_RESTART_MIKI=true; shift ;;
+      (--restart-machine) OPT_RESTART_MACHINE=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -281,6 +289,12 @@ function process_arguments () {
     display_usage
   elif [[ -n "${OPT_VERSION}" ]]; then
     display_version
+  elif [[ -n "${OPT_IMPORT_DUMP}" ]]; then
+    set_name
+    import_dump
+  elif [[ -n "${OPT_EXPORT_DUMP}" ]]; then
+    set_name
+    export_dump
   elif [[ -n "${OPT_RESET_ADMIN_PASSWORD}" ]]; then
     set_name
     reset_admin_password
@@ -315,6 +329,12 @@ function process_arguments () {
   elif [[ -n "${OPT_POWER_OFF}" ]]; then
     set_name
     power_off_droplet
+  elif [[ -n "${OPT_RESTART_MIKI}" ]]; then
+    set_name
+    restart_miki
+  elif [[ -n "${OPT_RESTART_MACHINE}" ]]; then
+    set_name
+    restart_machine
   elif [[ ! "$(basename ${OPT_MIKI_DIRECTORY})" == "miki" ]]; then
     display_usage
   elif [[ -z "${OPT_WIKI_NAME}" || -z "${OPT_WIKI_RESOURCES}" || -z "${OPT_COMPANY_NAME}" || -z "${OPT_COMPANY_DOMAIN}" ]]; then
@@ -372,6 +392,8 @@ OPTIONS:
   -t, --create-support-account  Create a support account on the instance
   -o, --power-on                Turn on the droplet
   -O, --power-off               Turn off the droplet
+      --import-dump             Import a database dump into the instance
+      --export-dump             Export the database dump from the instance
 EOF
   exit 0
 }
@@ -1151,6 +1173,46 @@ function power_off_droplet () {
   doctl compute droplet-action power-off "${id}"
 
   exit $?
+}
+
+function import_dump () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+  local remote_file=$(mktemp --dry-run --suffix .pg)
+
+  run_scp "${OPT_IMPORT_DUMP}" "${OPT_DROPLET_USER}@${address}:${remote_file}"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgadm -If ${remote_file}"
+
+  exit 0
+}
+
+function export_dump () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+  local remote_file=$(mktemp --dry-run --suffix .pg)
+
+  run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgadm -Ef ${remote_file}"
+  run_scp "${OPT_DROPLET_USER}@${address}:${remote_file}" "${OPT_EXPORT_DUMP}"
+
+  exit 0
+}
+
+function restart_miki () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl restart miki.service"
+}
+
+function restart_machine () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  run_ssh "${OPT_DROPLET_USER}@${address}" "reboot"
 }
 
 function main () {
