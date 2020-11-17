@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.6"
+readonly VERSION="1.4.7"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -205,19 +205,19 @@ function parse_arguments () {
 function get_droplet_id () {
   debug ${FUNCNAME[0]} "$@"
 
-  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $1}'
+  doadm -Ld | awk "/[0-9]+\s+${1}\s+/" | awk '{print $1}'
 }
 
 function get_droplet_name () {
   debug ${FUNCNAME[0]} "$@"
 
-  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $2}'
+  doadm -Ld | awk "/[0-9]+\s+${1}\s+/" | awk '{print $2}'
 }
 
 function get_droplet_address () {
   debug ${FUNCNAME[0]} "$@"
 
-  doadm -LD | awk "/[0-9]+\s+${1}\s+/" | awk '{print $3}'
+  doadm -Ld | awk "/[0-9]+\s+${1}\s+/" | awk '{print $3}'
 }
 
 function make_miki_www_name () {
@@ -728,7 +728,7 @@ function create_droplet () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_INSTALL_PATH}" && -n "${VAL_DROPLET}" ]]; then
-    OPT_DROPLET_ADDRESS=$(doadm -CDN "${VAL_DROPLET}" -K "${OPT_SSH_KEYS}" )
+    OPT_DROPLET_ADDRESS=$(doadm -cdn "${VAL_DROPLET}" -k "${OPT_SSH_KEYS}" )
     echo "${OPT_DROPLET_ADDRESS}"
   fi
 }
@@ -808,7 +808,7 @@ function create_firewall () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${VAL_FIREWALL}" ]]; then
-    doadm -CFN "${VAL_FIREWALL}" -a "${VAL_DROPLET}" \
+    doadm -cfn "${VAL_FIREWALL}" -a "${VAL_DROPLET}" \
           -SA "${OPT_FIREWALL_ADDRESSES}" -P "${OPT_FIREWALL_PORTS}"
   fi
 }
@@ -993,7 +993,7 @@ function expunge_instance () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_EXPUNGE_INSTANCE}" ]]; then
-    doadm -XDN "${OPT_HOST}"
+    doadm -xdn "${OPT_HOST}"
   fi
 
   exit $?
@@ -1003,7 +1003,7 @@ function list_instances () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_LIST_INSTANCES}" ]]; then
-    doadm -lD | awk "/[0-9]+\s+miki/" | column -t
+    doadm -ld | awk "/[0-9]+\s+miki/" | column -t
   fi
 
   exit 0
