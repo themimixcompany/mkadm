@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.8"
+readonly VERSION="1.4.9"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1203,7 +1203,7 @@ function import_dump () {
   local remote_file=$(mktemp --dry-run --suffix .pg)
 
   run_scp "${OPT_IMPORT_DUMP}" "${OPT_DROPLET_USER}@${address}:${remote_file}"
-  run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgadm -If ${remote_file}"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgadm --delete -If ${remote_file}"
 
   exit 0
 }
@@ -1216,6 +1216,7 @@ function export_dump () {
 
   run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgadm -Ef ${remote_file}"
   run_scp "${OPT_DROPLET_USER}@${address}:${remote_file}" "${OPT_EXPORT_DUMP}"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "rm -f ${remote_file}"
 
   exit 0
 }
