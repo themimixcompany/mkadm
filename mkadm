@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.5"
+readonly VERSION="1.4.6"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -394,6 +394,8 @@ OPTIONS:
   -O, --power-off               Turn off the droplet
       --import-dump             Import a database dump into the instance
       --export-dump             Export the database dump from the instance
+      --restart-miki            Restart the Miki service
+      --restart-machine         Restart the remote machine
 EOF
   exit 0
 }
@@ -1205,6 +1207,8 @@ function restart_miki () {
   local address=$(get_droplet_address "${OPT_HOST}")
 
   run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl restart miki.service"
+
+  exit $?
 }
 
 function restart_machine () {
@@ -1213,6 +1217,8 @@ function restart_machine () {
   local address=$(get_droplet_address "${OPT_HOST}")
 
   run_ssh "${OPT_DROPLET_USER}@${address}" "reboot"
+
+  exit $?
 }
 
 function main () {
