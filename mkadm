@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.9"
+readonly VERSION="1.5.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -44,6 +44,7 @@ VAL_SUPPORT_SQL_LOCAL_FILE=
 VAL_SUPPORT_SQL_REMOTE_FILE=
 
 OPT_NAME=
+OPT_EMAIL=
 OPT_MIKI_DIRECTORY=
 OPT_WIKI_NAME="miki"
 OPT_WIKI_DOMAIN=
@@ -64,7 +65,7 @@ OPT_DROPLET_NAME=
 OPT_DROPLET_ADDRESS=
 OPT_DATABASE_NAME="defaultdb"
 OPT_DATABASE_USER="doadmin"
-OPT_DATABASE_INIT=
+OPT_DATABASE_INIT="${SELF_DIR}/dat/miki-core.pg"
 OPT_FIREWALL_NAME=
 OPT_FIREWALL_ADDRESSES=
 OPT_FIREWALL_PORTS="22,80,443"
@@ -142,7 +143,7 @@ function run_scp () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:V:eEp:P:iKk:D:B:U:I:F:A:P:fH:Y:y:lsc:QS:xrtoO --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:d:DA:P:fH:Y:y:lsc:QS:xrtoO --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -157,24 +158,26 @@ function parse_arguments () {
       (--verbose) OPT_VERBOSE=true; shift ;;
       (--version) OPT_VERSION=true; shift ;;
       (-n|--name) OPT_NAME=$2; shift 2 ;;
+      (-e|--email) OPT_EMAIL=$2; shift 2 ;;
       (--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
       (--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
       (--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
       (--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
-      (-V|--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
-      (-e|--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
-      (-E|--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
+      (--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
+      (--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
+      (--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
       (-p|--pgadm-path) OPT_PGADM_PATH=$2; shift 2 ;;
       (-P|--install-path) OPT_MAKE_TARBALL=true; OPT_INSTALL_PATH=$2; shift 2 ;;
       (-i|--install-remotely) OPT_MAKE_TARBALL=true; OPT_INSTALL_REMOTELY=true; shift ;;
       (-K|--remove-self-ssh-key) OPT_REMOVE_SELF_SSH_KEY=true; shift ;;
       (-k|--ssh-keys) OPT_SSH_KEYS=$2; shift 2 ;;
-      (-D|--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
-      (-B|--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
-      (-U|--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
-      (-I|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
-      (-F|--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
+      (--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
+      (--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
+      (--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
+      (-d|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
+      (-D|--no-database-init) OPT_DATABASE_INIT= ; shift ;;
+      (--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
       (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
       (-f|--create-firewall) OPT_CREATE_FIREWALL=true; shift ;;
@@ -291,6 +294,8 @@ function process_arguments () {
     display_usage
   elif [[ -n "${OPT_VERSION}" ]]; then
     display_version
+  elif [[ -n "${OPT_LIST_INSTANCES}" ]]; then
+    list_instances
   elif [[ -n "${OPT_IMPORT_DUMP}" ]]; then
     set_name
     import_dump
@@ -304,9 +309,10 @@ function process_arguments () {
     set_name
     create_support_account
   elif [[ -n "${OPT_INSTALL_REMOTELY}" ]]; then
+    set_name
     check_droplet
-  elif [[ -n "${OPT_LIST_INSTANCES}" ]]; then
-    list_instances
+  # elif [[ -z "${OPT_EMAIL}" ]]; then
+  #   display_usage
   elif [[ -n "${OPT_SSH}" && -n "${OPT_NAME}" ]]; then
     set_name
     connect_ssh
@@ -361,29 +367,32 @@ OPTIONS:
       --verbose                 Enable verbose output
       --version                 Display program version info
   -n, --name                    Set the name of the instance
-  -w, --wiki-name               Set wiki name
-  -d, --wiki-domain             Set wiki domain
-  -R, --wiki-resources          Set path of wiki resources
+  -e, --email                   Set the email address of the admin account
+      --wiki-name               Set wiki name
+      --wiki-domain             Set wiki domain
+      --wiki-resources          Set path of wiki resources
       --company-name            Set company name
       --company-domain          Set company domain
   -V, --package-version         Set version in package.json
-  -e, --enable-wiki-ssl         Enable wiki config SSL
-  -E, --enable-db-ssl           Enable database config SSL
+      --enable-wiki-ssl         Enable wiki config SSL
+      --enable-db-ssl           Enable database config SSL
   -p, --pgadm-path              Specify the path of the pgadm program
-  -P, --install-path            Specify the installation path of Miki on the instance
+      --install-path            Specify the installation path of Miki on the instance
   -i, --install-remotely        Flag to perform remote installation
   -K, --remove-self-ssh-key     Remove the SSH key of the host from the allowed SSH keys
   -k, --ssh-keys                Comma-separated list of allowed SSH keys on the instance
-  -D, --droplet-name            Set the name of droplet to manage
-  -B, --database-name           Set the name of the database
-  -U, --database-user           Set the name of the database user
-  -I, --database-init           Initialize the database with a dump
-  -F, --firewall-name           Set the name of firewall for this droplet
+      --droplet-name            Set the name of droplet to manage
+      --database-name           Set the name of the database
+      --database-user           Set the name of the database user
+  -d, --database-init           Specify the path to the database dump to import on the instance
+  -D, --no-database-init        Do not initialize the instance with a database dump
+      --firewall-name           Set the name of firewall for this droplet
   -A, --firewall-addresses      Comma-separated list of IP addresses to allow on the droplet
   -P, --firewall-ports          Comma-separated list of allowed ports on the droplet
   -f, --create-firewall         Create a firewall based from the instance name
   -H, --host                    Override the name of the remote host
-  -Y, --yaml-filter             Send a YAML filter to an address
+  -Y, --yaml-filter             Send an updating YAML filter to the instance
+  -y, --query-filter            Send a query YAML filter to the instance
       --enable-ssl              Enable SSL on the remote instance
       --disable-ssl             Disable SSL on the remote instance
       --domain-name             Set the domain name of the remote instance
@@ -661,16 +670,6 @@ GRANT ALL PRIVILEGES ON DATABASE ${OPT_DATABASE_NAME} TO ${OPT_DATABASE_USER};
 EOF
 }
 
-function create_post_sql () {
-  debug ${FUNCNAME[0]} "$@"
-
-  mkdir -p sql
-  cat << EOF > sql/post.sql
-UPDATE "searchEngines" SET db = 'f' WHERE key = db;
-UPDATE "searchEngines" SET postgres = 't' WHERE key = postgres;
-EOF
-}
-
 function copy_bin () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -752,11 +751,15 @@ function upload_tarball () {
   debug ${FUNCNAME[0]} "$@"
 
   local file="$(basename ${OPT_MIKI_DIRECTORY}).tar.gz"
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  echo "\${OPT_HOST}: ${OPT_HOST}"
+  echo "\${address}: ${address}"
 
   sleep "${VAL_SLEEP}"
 
   if [[ -f "${file}" && -n "${OPT_INSTALL_PATH}" && -n "${OPT_DROPLET_USER}" ]] && droplet_ready_p; then
-    run_scp "${file}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:"
+    run_scp "${file}" "${OPT_DROPLET_USER}@${address}:"
   fi
 }
 
@@ -772,28 +775,37 @@ function delete_tarball () {
 function upload_database_init () {
   debug ${FUNCNAME[0]} "$@"
 
+  local address=$(get_droplet_address "${OPT_HOST}")
+
   if [[ -n "${OPT_DATABASE_INIT}" ]]; then
-    run_scp "${OPT_DATABASE_INIT}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${VAL_REMOTE_TMP}"
+    run_scp "${OPT_DATABASE_INIT}" "${OPT_DROPLET_USER}@${address}:${VAL_REMOTE_TMP}"
   fi
 }
 
 function upload_pgadm () {
   debug ${FUNCNAME[0]} "$@"
 
+  local address=$(get_droplet_address "${OPT_HOST}")
+
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
-    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${VAL_REMOTE_BIN}"
+    run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${address}:${VAL_REMOTE_BIN}"
   fi
 }
 
 function upload_pgsql () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
-    run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}:${VAL_REMOTE_BIN}"
+    run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${address}:${VAL_REMOTE_BIN}"
   fi
 }
 
 function install_miki () {
   debug ${FUNCNAME[0]} "$@"
 
+  local address=$(get_droplet_address "${OPT_HOST}")
   local file="$(basename ${OPT_MIKI_DIRECTORY}).tar.gz"
   local base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_PATH}/bin/install -i ${OPT_INSTALL_PATH}"
   local cmd=
@@ -805,7 +817,7 @@ function install_miki () {
   fi
 
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
-    run_ssh "${OPT_DROPLET_USER}@${OPT_DROPLET_ADDRESS}" "${cmd}"
+    run_ssh "${OPT_DROPLET_USER}@${address}" "${cmd}"
   fi
 
   return 0
@@ -872,14 +884,13 @@ function check_droplet () {
 function remote_install () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_PATH}" && \
-          -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
+  if [[ -n "${OPT_EMAIL}" && -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_PATH}" && \
+        -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
     push "${OPT_MIKI_DIRECTORY}"
 
     create_password_file
     create_remote_config_yml
     create_init_sql
-    #create_post_sql
     delete_password_file
     copy_bin
 
@@ -897,6 +908,8 @@ function remote_install () {
 
     install_miki
     create_firewall
+
+    reset_admin_password
     display_address
   fi
 }
@@ -908,8 +921,7 @@ function send_yaml_filter () {
 
   if [[ -n "${filter}" && -n "${OPT_HOST}" ]]; then
     for address in $(get_droplet_address "${OPT_HOST}"); do
-      run_ssh "${OPT_DROPLET_USER}@${address}" \
-              "yq -iy \"${filter}\" /var/miki/config.yml"
+      run_ssh "${OPT_DROPLET_USER}@${address}" "yq -iy ${filter} /var/miki/config.yml"
     done
   fi
 }
@@ -970,8 +982,7 @@ function query_filter () {
 
   if [[ -n "${filter}" && -n "${OPT_HOST}" ]]; then
     for address in $(get_droplet_address "${OPT_HOST}"); do
-      run_ssh "${OPT_DROPLET_USER}@${address}" \
-              "yq -r ${filter} /var/miki/config.yml"
+      run_ssh "${OPT_DROPLET_USER}@${address}" "yq -r ${filter} /var/miki/config.yml"
     done
   fi
 
@@ -983,9 +994,7 @@ function connect_ssh () {
 
   local address=$(get_droplet_address "${OPT_HOST}")
 
-  if [[ -n "${address}" ]]; then
-    run_ssh "${OPT_DROPLET_USER}@${address}"
-  fi
+  run_ssh "${OPT_DROPLET_USER}@${address}"
 
   exit $?
 }
@@ -995,9 +1004,7 @@ function connect_sql () {
 
   local address=$(get_droplet_address "${OPT_HOST}")
 
-  if [[ -n "${address}" ]]; then
-    run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgsql"
-  fi
+  run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgsql"
 
   exit $?
 }
@@ -1005,9 +1012,9 @@ function connect_sql () {
 function send_command () {
   debug ${FUNCNAME[0]} "$@"
 
-  for address in $(get_droplet_address "${OPT_HOST}"); do
-    run_ssh "${OPT_DROPLET_USER}@${address}" "${OPT_COMMAND}"
-  done
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  run_ssh "${OPT_DROPLET_USER}@${address}" "${OPT_COMMAND}"
 
   exit $?
 }
@@ -1038,25 +1045,13 @@ function generate_hash () {
   echo "${1}" | htpasswd -niBC 10 "" | tr -d ':\n'
 }
 
-function upload_file () {
-  debug ${FUNCNAME[0]} "$@"
-
-  local address=$(get_droplet_address "${OPT_HOST}")
-  local local_file="${1}"
-  local remote_file="${2}"
-
-  run_scp -q "${local_file}" "${OPT_DROPLET_USER}@${address}:${remote_file}"
-}
-
 function load_remote_sql () {
   debug ${FUNCNAME[0]} "$@"
 
   local address=$(get_droplet_address "${OPT_HOST}")
   local file="${1}"
 
-  if [[ -n "${address}" ]]; then
-    run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgsql -f ${file}; rm -f ${file}"
-  fi
+  run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgsql -f ${file}; rm -f ${file}"
 }
 
 function generate_admin_password () {
@@ -1069,22 +1064,34 @@ function generate_admin_password () {
 function create_admin_sql_file () {
   debug ${FUNCNAME[0]} "$@"
 
-  local name=Administrator
+  local id=1
 
   VAL_ADMIN_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
 
-  cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
-UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE name = '${name}';
-UPDATE users SET "mustChangePwd" = 't' WHERE name = '${name}';
+  if [[ -n "${OPT_RESET_ADMIN_PASSWORD}" ]]; then
+    cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
+UPDATE users SET email = '${OPT_EMAIL}' WHERE name = '${id}';
+UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE name = '${id}';
+UPDATE users SET "mustChangePwd" = 't' WHERE name = '${id}';
 EOF
+  else
+    cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
+UPDATE users SET email = '${OPT_EMAIL}' WHERE name = '${id}';
+UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE name = '${id}';
+UPDATE users SET "mustChangePwd" = 't' WHERE name = '${id}';
+UPDATE settings SET value = '{"v":"https://${VAL_DOMAIN}"}' WHERE key = 'host';
+EOF
+  fi
 }
 
 function upload_admin_sql_file () {
   debug ${FUNCNAME[0]} "$@"
 
+  local address=$(get_droplet_address "${OPT_HOST}")
+
   VAL_ADMIN_SQL_REMOTE_FILE=$(mktemp --dry-run --suffix .sql)
 
-  upload_file "${VAL_ADMIN_SQL_LOCAL_FILE}" "${VAL_ADMIN_SQL_REMOTE_FILE}"
+  run_scp "${VAL_ADMIN_SQL_LOCAL_FILE}" "${OPT_DROPLET_USER}@${address}:${VAL_ADMIN_SQL_REMOTE_FILE}"
   rm -f "${VAL_ADMIN_SQL_LOCAL_FILE}"
 }
 
@@ -1103,7 +1110,7 @@ function display_admin_password () {
 function reset_admin_password () {
   debug ${FUNCNAME[0]} "$@"
 
-  if [[ -n "${OPT_RESET_ADMIN_PASSWORD}" && -n "${OPT_HOST}" ]]; then
+  if [[ -n "${OPT_EMAIL}" && -n "${OPT_HOST}" ]]; then
     generate_admin_password
     create_admin_sql_file
     upload_admin_sql_file
@@ -1135,9 +1142,10 @@ EOF
 function upload_support_sql_file () {
   debug ${FUNCNAME[0]} "$@"
 
+  local address=$(get_droplet_address "${OPT_HOST}")
   VAL_SUPPORT_SQL_REMOTE_FILE=$(mktemp --dry-run --suffix .sql)
 
-  upload_file "${VAL_SUPPORT_SQL_LOCAL_FILE}" "${VAL_SUPPORT_SQL_REMOTE_FILE}"
+  run_scp "${VAL_SUPPORT_SQL_LOCAL_FILE}" "${OPT_DROPLET_USER}@${address}:${VAL_SUPPORT_SQL_REMOTE_FILE}"
   rm -f "${VAL_SUPPORT_SQL_LOCAL_FILE}"
 }
 
@@ -1170,10 +1178,11 @@ function create_support_account () {
 function remote_load_sql_file () {
   debug ${FUNCNAME[0]} "$@"
 
+  local address=$(get_droplet_address "${OPT_HOST}")
   local remote_file=$(mktemp --dry-run --suffix .sql)
 
   if [[ -n "${OPT_SQL_FILE}" && -f "${OPT_SQL_FILE}" && -n "${OPT_HOST}" ]]; then
-    upload_file "${OPT_SQL_FILE}" "${remote_file}"
+    run_scp "${OPT_SQL_FILE}" "${OPT_DROPLET_USER}@${address}:${remote_file}"
     load_remote_sql "${remote_file}"
   fi
 
