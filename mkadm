@@ -25,6 +25,7 @@ readonly VAL_DEFAULT_DOMAIN="streamsharing.io"
 readonly VAL_REMOTE_BIN="/usr/local/bin"
 readonly VAL_REMOTE_TMP="/tmp"
 readonly VAL_MIKI_REPOSITORY="https://github.com/themimixcompany/wiki"
+readonly VAL_MIKI_LOCALES_REPOSITORY="https://github.com/themimixcompany/wiki-localization"
 
 VAL_DOMAIN=
 VAL_DROPLET=
@@ -430,7 +431,7 @@ function create_miki_directory () {
   OPT_MIKI_DIRECTORY="$(mktemp -d --suffix .miki)/miki"
 }
 
-function clone_repository () {
+function clone_miki_repository () {
   debug ${FUNCNAME[0]} "$@"
 
   git clone "${VAL_MIKI_REPOSITORY}" "${OPT_MIKI_DIRECTORY}"
@@ -450,7 +451,7 @@ function initialize () {
   display_banner "Performing initialization ..."
 
   create_miki_directory
-  clone_repository
+  clone_miki_repository
   push "${OPT_MIKI_DIRECTORY}"
 
   if [[ -f "package.json" && "$(jq -r '.name' package.json)" == "wiki" ]]; then
@@ -544,11 +545,11 @@ function update_files () {
 
     ['https://static\.requarks\.io/logo']="${OPT_WIKI_RESOURCES}"
 
-    ['https://github\.com/Requarks/wiki']="https://github.com/themimixcompany/miki"
+    ['https://github\.com/Requarks/wiki']="${VAL_MIKI_REPOSITORY}"
 
-    #['requarks\.io']="${OPT_COMPANY_DOMAIN}"
-    #['requarks']="${OPT_COMPANY_NAME}"
-    #['Requarks']="${OPT_COMPANY_NAME^}"
+    # ['requarks\.io']="${OPT_COMPANY_DOMAIN}"
+    # ['requarks']="${OPT_COMPANY_NAME}"
+    # ['Requarks']="${OPT_COMPANY_NAME^}"
   )
 
   for i in "${!SUBSTITUTIONS[@]}"; do
@@ -558,10 +559,11 @@ function update_files () {
   done
 }
 
-function copy_data_files () {
+function clone_locales_repository () {
   debug ${FUNCNAME[0]} "$@"
 
-  rsync -a "${VAL_RESOURCES_DIR}/data" .
+  mkdir -p data
+  git clone "${VAL_MIKI_LOCALES_REPOSITORY}" "data/sideload"
 }
 
 function update_package_json () {
@@ -867,7 +869,7 @@ function local_install () {
 
   copy_vue_files
   update_files
-  copy_data_files
+  clone_locales_repository
   update_package_json
   yarn_build
 
