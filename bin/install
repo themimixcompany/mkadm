@@ -154,11 +154,16 @@ function load_post_sql () {
   /usr/local/bin/pgsql --file="${VAL_INSTALL_PATH}/sql/post.sql"
 }
 
-function start_miki_service () {
+function enable_miki_service () {
   debug ${FUNCNAME[0]} "$@"
 
   systemctl daemon-reload
   systemctl enable miki.service
+}
+
+function start_miki_service () {
+  debug ${FUNCNAME[0]} "$@"
+
   systemctl start miki.service
 }
 
@@ -180,7 +185,9 @@ function main () {
   install_tools
   install_miki_service
   initialize_database
-  start_miki_service
+  enable_miki_service
+
+  #start_miki_service
   #load_post_sql
 }
 
