@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.5.0"
+readonly VERSION="1.5.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -158,7 +158,7 @@ function parse_arguments () {
       (--verbose) OPT_VERBOSE=true; shift ;;
       (--version) OPT_VERSION=true; shift ;;
       (-n|--name) OPT_NAME=$2; shift 2 ;;
-      (-e|--email) OPT_EMAIL=$2; shift 2 ;;
+      (-e|--email) OPT_EMAIL=$2; OPT_INSTALL_REMOTELY=true; shift 2 ;;
       (--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
       (--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
@@ -305,6 +305,7 @@ function process_arguments () {
   elif [[ -n "${OPT_RESET_ADMIN_PASSWORD}" ]]; then
     set_name
     reset_admin_password
+    exit 0
   elif [[ -n "${OPT_CREATE_SUPPORT_ACCOUNT}" ]]; then
     set_name
     create_support_account
@@ -538,9 +539,7 @@ function update_files () {
     ['Wiki\.js']="${OPT_WIKI_NAME^}"
     ['WIKI\.js']="${OPT_WIKI_NAME^}"
 
-    #['wiki\.js\.org']="${VAL_DOMAIN}"
     ['wiki\.js\.org']="${VAL_MIKI_DOMAIN}"
-
     ['wiki\.yourdomain\.com']="${VAL_DOMAIN}"
 
     ['https://static\.requarks\.io/logo']="${OPT_WIKI_RESOURCES}"
@@ -559,6 +558,12 @@ function update_files () {
   done
 }
 
+function copy_data_files () {
+  debug ${FUNCNAME[0]} "$@"
+
+  rsync -a "${VAL_RESOURCES_DIR}/data" .
+}
+
 function update_package_json () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -573,9 +578,8 @@ function display_banner () {
   local message="${1}"
 
   echo "================================================================================"
-  echo " ${message}"
+  echo -e " ${message}"
   echo "================================================================================"
-
 }
 
 function yarn_build () {
@@ -639,7 +643,7 @@ ssl:
   port: 443
   provider: letsencrypt
   domain: ${VAL_DOMAIN}
-  subscriberEmail: david@mimix.io
+  subscriberEmail: ${OPT_EMAIL}
 
 bindIP: 0.0.0.0
 
@@ -753,9 +757,6 @@ function upload_tarball () {
   local file="$(basename ${OPT_MIKI_DIRECTORY}).tar.gz"
   local address=$(get_droplet_address "${OPT_HOST}")
 
-  echo "\${OPT_HOST}: ${OPT_HOST}"
-  echo "\${address}: ${address}"
-
   sleep "${VAL_SLEEP}"
 
   if [[ -f "${file}" && -n "${OPT_INSTALL_PATH}" && -n "${OPT_DROPLET_USER}" ]] && droplet_ready_p; then
@@ -832,10 +833,16 @@ function create_firewall () {
   fi
 }
 
-function display_address () {
+function display_greeting () {
   debug ${FUNCNAME[0]} "$@"
 
-  display_banner "Your new Miki instance is now available at http://${OPT_DROPLET_ADDRESS}."
+  echo "================================================================================"
+  echo " Your new Miki instance is now ready."
+  echo ""
+  echo " URL: http://${OPT_DROPLET_ADDRESS}"
+  echo " Username: ${OPT_EMAIL}"
+  echo " Password: ${VAL_ADMIN_PASSWORD}"
+  echo "================================================================================"
 }
 
 function local_install_p () {
@@ -860,6 +867,7 @@ function local_install () {
 
   copy_vue_files
   update_files
+  copy_data_files
   update_package_json
   yarn_build
 
@@ -879,6 +887,22 @@ function check_droplet () {
   else
     return 0
   fi
+}
+
+function start_miki_service () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl start miki.service"
+}
+
+function restart_miki_service () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local address=$(get_droplet_address "${OPT_HOST}")
+
+  run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl restart miki.service"
 }
 
 function remote_install () {
@@ -910,7 +934,8 @@ function remote_install () {
     create_firewall
 
     reset_admin_password
-    display_address
+    start_miki_service
+    display_greeting
   fi
 }
 
@@ -1061,24 +1086,32 @@ function generate_admin_password () {
   VAL_ADMIN_PASSWORD_HASH=$(generate_hash "${VAL_ADMIN_PASSWORD}")
 }
 
+function generate_date () {
+  debug ${FUNCNAME[0]} "$@"
+
+  date +"%Y-%m-%dT%H:%M:%S.000%Z"
+}
+
 function create_admin_sql_file () {
   debug ${FUNCNAME[0]} "$@"
 
+  local name=Administrator
   local id=1
+  local date=$(generate_date)
 
   VAL_ADMIN_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
 
   if [[ -n "${OPT_RESET_ADMIN_PASSWORD}" ]]; then
     cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
-UPDATE users SET email = '${OPT_EMAIL}' WHERE name = '${id}';
-UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE name = '${id}';
-UPDATE users SET "mustChangePwd" = 't' WHERE name = '${id}';
+UPDATE users SET email = '${OPT_EMAIL}' WHERE id = '${id}';
+UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE id = '${id}';
+UPDATE users SET "mustChangePwd" = 't' WHERE id = '${id}';
 EOF
   else
     cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
-UPDATE users SET email = '${OPT_EMAIL}' WHERE name = '${id}';
-UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE name = '${id}';
-UPDATE users SET "mustChangePwd" = 't' WHERE name = '${id}';
+UPDATE users SET email = '${OPT_EMAIL}' WHERE id = '${id}';
+UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE id = '${id}';
+UPDATE users SET "mustChangePwd" = 't' WHERE id = '${id}';
 UPDATE settings SET value = '{"v":"https://${VAL_DOMAIN}"}' WHERE key = 'host';
 EOF
   fi
@@ -1104,7 +1137,9 @@ function remote_reset_admin_password () {
 function display_admin_password () {
   debug ${FUNCNAME[0]} "$@"
 
-  echo "${VAL_ADMIN_PASSWORD}"
+  if [[ -n "${OPT_RESET_ADMIN_PASSWORD}" ]]; then
+    echo "${VAL_ADMIN_PASSWORD}"
+  fi
 }
 
 function reset_admin_password () {
@@ -1115,10 +1150,9 @@ function reset_admin_password () {
     create_admin_sql_file
     upload_admin_sql_file
     remote_reset_admin_password
+    restart_miki_service
     display_admin_password
   fi
-
-  exit 0
 }
 
 function generate_support_password () {
