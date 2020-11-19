@@ -41,8 +41,9 @@ Before using this script, you must first authenticate with DigitalOcean. To do s
 To create an instance with the following configuration,
 
 - name: `goliath`
+- email: `david@mimix.io`
 - domain: `goliath.streamsharing.io`
-- droplet name: `miki-goliath-www`
+- droplet name: `miki-goliath`
 - firewall name: `miki-goliath-fw`
 - allowed ip addresses:
   - self address (control center)
@@ -51,21 +52,20 @@ To create an instance with the following configuration,
   - `22`
   - `80`
   - `443`
-- input directory: `~/miki/miki`
 
 run:
 
-    mkadm -in goliath -fA 73.6.24.189.144
+    mkadm -n goliath -e david@mimix.io -fA 73.6.24.189.144
 
 When the installation has finished, you’ll see a message containing the IP address of the instance. Use this IP address as the DNS A record for `goliath.streamsharing.io` using your domain registrar.
 
 To do the same, but initialize the database with a PostgreSQL dump, run:
 
-    mkadm -in goliath -I ~/miki/dat/mimix-miki.pg
+    mkadm -n goliath -e david@mimix.io -d ~/miki/dat/mimix-miki.pg
 
 To do the same, but without database initialization, run:
 
-    mkadm -in goliath
+    mkadm -n goliath -e david@mimx.io
 
 To connect to goliath via SSH, run:
 
