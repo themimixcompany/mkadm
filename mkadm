@@ -840,7 +840,6 @@ function display_greeting () {
 
   echo "================================================================================"
   echo " Your new Miki instance is now ready."
-  echo ""
   echo " URL: http://${OPT_DROPLET_ADDRESS}"
   echo " Username: ${OPT_EMAIL}"
   echo " Password: ${VAL_ADMIN_PASSWORD}"
