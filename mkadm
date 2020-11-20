@@ -15,7 +15,7 @@ OPT_VERSION=
 readonly VAL_BASE_NAME="miki"
 readonly VAL_WWW_NAME="www"
 readonly VAL_FW_NAME="fw"
-readonly VAL_SLEEP="15"
+readonly VAL_SLEEP="30"
 readonly VAL_RANDOM="$(od -t uI -N 4 /dev/urandom | awk '{print $2}' | sed 2d)"
 readonly VAL_BASE_COMMIT="2.5.159"
 readonly VAL_DEFAULT_PACKAGE_VERSION="1.0.0"
@@ -547,9 +547,9 @@ function update_files () {
 
     ['https://github\.com/Requarks/wiki']="${VAL_MIKI_REPOSITORY}"
 
-    # ['requarks\.io']="${OPT_COMPANY_DOMAIN}"
+    ['Requarks']="${OPT_COMPANY_NAME^}"
+    ['requarks\.io']="${OPT_COMPANY_DOMAIN}"
     # ['requarks']="${OPT_COMPANY_NAME}"
-    # ['Requarks']="${OPT_COMPANY_NAME^}"
   )
 
   for i in "${!SUBSTITUTIONS[@]}"; do
@@ -839,8 +839,7 @@ function display_greeting () {
   debug ${FUNCNAME[0]} "$@"
 
   echo "================================================================================"
-  echo " Your new Miki instance is now ready."
-  echo " URL: http://${OPT_DROPLET_ADDRESS}"
+  echo " Your new Miki instance is now available at http://${OPT_DROPLET_ADDRESS}."
   echo " Username: ${OPT_EMAIL}"
   echo " Password: ${VAL_ADMIN_PASSWORD}"
   echo "================================================================================"
