@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.5.4"
+readonly VERSION="1.5.5"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -837,7 +837,10 @@ function display_greeting () {
   debug ${FUNCNAME[0]} "$@"
 
   echo "================================================================================"
-  echo " Your new Miki instance is now available at http://${OPT_DROPLET_ADDRESS}."
+  echo " Your new Miki instance is now ready."
+  echo ""
+  echo " Name: ${OPT_NAME}"
+  echo " Address: ${OPT_DROPLET_ADDRESS}"
   echo " Username: ${OPT_EMAIL}"
   echo " Password: ${VAL_ADMIN_PASSWORD}"
   echo "================================================================================"
@@ -910,6 +913,7 @@ function notify_callback_host () {
        -d "{
              \"data\":
              {
+               \"name\": \"${OPT_NAME}\",
                \"address\": \"${OPT_DROPLET_ADDRESS}\",
                \"username\": \"${OPT_EMAIL}\",
                \"password\": \"${VAL_ADMIN_PASSWORD}\"
