@@ -408,6 +408,7 @@ OPTIONS:
       --restart-machine         Restart the remote machine
   -O, --origin-path             Specify the origin path when copying files
   -D, --destination-path        Specify the destination path when copying files
+  -C, --check-name              Return true if an instance already exits
 EOF
   exit 0
 }
@@ -1312,14 +1313,9 @@ function copy_file () {
 function check_name () {
   debug ${FUNCNAME[0]} "$@"
 
-  doadm -ld | awk "/[0-9]+\s+miki/" | awk '{print $2}' | egrep -q "miki-${OPT_NAME}$"
+  doadm -ld | awk "/[0-9]+\s+miki/" | awk '{print $2}' | egrep "miki-${OPT_NAME}$"
 
-  if [[ $? -eq 0 ]]; then
-    echo OK
-  else
-    echo Not OK
-  fi
-
+  exit $?
 }
 
 function main () {
