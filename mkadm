@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.5.6"
+readonly VERSION="1.5.7"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1314,12 +1314,18 @@ function copy_file () {
   exit $?
 }
 
+function _check_name () {
+  debug ${FUNCNAME[0]} "$@"
+
+  doadm -ld | awk "/[0-9]+\s+miki/" | awk '{print $2}' | sed 's/^miki-//' | grep -q "^${OPT_NAME}$"
+
+  return $?
+}
+
 function check_name () {
   debug ${FUNCNAME[0]} "$@"
 
-  doadm -ld | awk "/[0-9]+\s+miki/" | awk '{print $2}' | egrep -q "miki-${OPT_NAME}$"
-
-  if [[ $? -eq 0 ]]; then
+  if _check_name; then
     exit 1
   else
     exit 0
