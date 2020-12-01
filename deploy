@@ -116,7 +116,7 @@ function run () {
   if [[ $# -eq 2 ]]; then
     name=$1
     email=$2
-    screen -L -Logfile "${VAL_SCREEN_LOG_FILE}" -dmS mkadm mkadm -n "${name}" -e "${email}"
+    screen -L -Logfile "${VAL_SCREEN_LOG_FILE}" -dmS deploy mkadm -n "${name}" -e "${email}"
   else
     display_usage
   fi
