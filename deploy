@@ -43,7 +43,7 @@ function debug () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options h --longoptions help,debug,verbose,version -- "$@")
+  local opts=$(getopt -n "${SELF}" --longoptions help,debug,verbose,version -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
