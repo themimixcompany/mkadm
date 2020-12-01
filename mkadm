@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.6.0"
+readonly VERSION="1.7.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -26,7 +26,8 @@ readonly VAL_REMOTE_BIN="/usr/local/bin"
 readonly VAL_REMOTE_TMP="/tmp"
 readonly VAL_MIKI_REPOSITORY="https://github.com/themimixcompany/wiki"
 readonly VAL_MIKI_LOCALES_REPOSITORY="https://github.com/themimixcompany/wiki-localization"
-readonly VAL_CALLBACK_HOST="198.199.122.51"
+readonly VAL_HOOK_URL="http://198.199.122.51"
+readonly VAL_CHARGIFY_USERNAME="jm6xz1asP3UlyizRoeC7UbeXsJ90x0wbY2bwOOg34"
 
 VAL_DOMAIN_NAME=
 VAL_DROPLET_NAME=
@@ -95,6 +96,7 @@ OPT_DESTINATION_PATH=
 OPT_CHECK_NAME=
 OPT_GARBAGE_COLLECT=
 OPT_NEW_NAME=
+OPT_ID=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -157,7 +159,7 @@ function run_rsync () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xrtO:D:CN: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xrtO:D:CN: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,id: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -171,7 +173,7 @@ function parse_arguments () {
       (--debug) OPT_DEBUG=true; shift ;;
       (--verbose) OPT_VERBOSE=true; shift ;;
       (--version) OPT_VERSION=true; shift ;;
-      (-n|--name) OPT_NAME="${2,,}"; shift 2 ;;
+      (-n|--name) OPT_NAME=$2; shift 2 ;;
       (-e|--email) OPT_EMAIL=$2; OPT_INSTALL_REMOTELY=true; shift 2 ;;
       (--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
@@ -182,7 +184,7 @@ function parse_arguments () {
       (--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
       (-p|--pgadm-path) OPT_PGADM_PATH=$2; shift 2 ;;
-      (-P|--install-path) OPT_MAKE_TARBALL=true; OPT_INSTALL_PATH=$2; shift 2 ;;
+      (--install-path) OPT_MAKE_TARBALL=true; OPT_INSTALL_PATH=$2; shift 2 ;;
       (-i|--install-remotely) OPT_MAKE_TARBALL=true; OPT_INSTALL_REMOTELY=true; shift ;;
       (-K|--remove-self-ssh-key) OPT_REMOVE_SELF_SSH_KEY=true; shift ;;
       (-k|--ssh-keys) OPT_SSH_KEYS=$2; shift 2 ;;
@@ -220,6 +222,7 @@ function parse_arguments () {
       (-C|--check-name) OPT_CHECK_NAME=true; shift ;;
       (--garbage-collect) OPT_GARBAGE_COLLECT=true; shift ;;
       (-N|--new-name) OPT_NEW_NAME=$2; shift ;;
+      (--id) OPT_ID=$2; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -916,10 +919,12 @@ function restart_miki_service () {
   run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl restart miki.service"
 }
 
-function notify_callback_host () {
+function notify_hook () {
   debug ${FUNCNAME[0]} "$@"
 
-  curl -H "Content-Type: application/json" -X POST \
+  curl "${VAL_HOOK_URL}/control" \
+       -H "Content-Type: application/json" \
+       -X POST \
        -d "{
              \"data\":
              {
@@ -928,8 +933,22 @@ function notify_callback_host () {
                \"username\": \"${OPT_EMAIL}\",
                \"password\": \"${VAL_ADMIN_PASSWORD}\"
              }
-           }" \
-             "${VAL_CALLBACK_HOST}/control"
+           }"
+}
+
+function notify_chargify () {
+  debug ${FUNCNAME[0]} "$@"
+
+  if [[ -n "${OPT_ID}" ]]; then
+    curl "https://mimix.chargify.com/subscriptions/${OPT_ID}/metadata.json" \
+         -u "${VAL_CHARGIFY_USERNAME}:X" \
+         -X POST \
+         -H 'content-type: application/json' \
+         -d "{ \"metadata\": [ {
+                 \"name\": \"Choose a Name for This Miki\",
+                 \"value\": \"${OPT_NAME}\"
+             } ] }"
+  fi
 }
 
 function remote_install () {
@@ -963,7 +982,8 @@ function remote_install () {
     reset_admin_password
     start_miki_service
     display_greeting
-    notify_callback_host
+    notify_hook
+    notify_chargify
   fi
 }
 
