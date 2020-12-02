@@ -112,7 +112,7 @@ function run () {
 
   if [[ $# -ge 3 ]]; then
     screen -L -Logfile "${VAL_SCREEN_LOG_FILE}" \
-           -dmS deploy mkadm -n "${1}" -e "${2}" --id "${3}"
+           -dmS deploy mkadm -n "${1}" -e "${2}" --subscription-id "${3}"
   else
     display_usage
   fi
