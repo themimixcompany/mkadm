@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.1.0"
+readonly VERSION="1.1.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -110,17 +110,9 @@ function stage () {
 function run () {
   debug ${FUNCNAME[0]} "$@"
 
-  local name=
-  local email=
-  local id=
-
   if [[ $# -ge 3 ]]; then
-    name=$1
-    email=$2
-    id=$3
-
     screen -L -Logfile "${VAL_SCREEN_LOG_FILE}" \
-           -dmS deploy mkadm -n "${name}" -e "${email}" --id "${id}"
+           -dmS deploy mkadm -n "${1}" -e "${2}" --id "${3}"
   else
     display_usage
   fi
