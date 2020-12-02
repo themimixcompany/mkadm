@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.7.0"
+readonly VERSION="1.7.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -26,7 +26,7 @@ readonly VAL_REMOTE_BIN="/usr/local/bin"
 readonly VAL_REMOTE_TMP="/tmp"
 readonly VAL_MIKI_REPOSITORY="https://github.com/themimixcompany/wiki"
 readonly VAL_MIKI_LOCALES_REPOSITORY="https://github.com/themimixcompany/wiki-localization"
-readonly VAL_HOOK_URL="http://198.199.122.51"
+readonly VAL_HOOK_URL="http://hook"
 readonly VAL_CHARGIFY_USERNAME="jm6xz1asP3UlyizRoeC7UbeXsJ90x0wbY2bwOOg34"
 
 VAL_DOMAIN_NAME=
@@ -931,7 +931,8 @@ function notify_hook () {
                \"name\": \"${OPT_NAME}\",
                \"address\": \"${OPT_DROPLET_ADDRESS}\",
                \"username\": \"${OPT_EMAIL}\",
-               \"password\": \"${VAL_ADMIN_PASSWORD}\"
+               \"password\": \"${VAL_ADMIN_PASSWORD}\",
+               \"subscription_id\": \"${OPT_ID}\"
              }
            }"
 }
