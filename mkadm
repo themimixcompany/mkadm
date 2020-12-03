@@ -945,13 +945,17 @@ function notify_chargify () {
 
   if [[ -n "${OPT_SUBSCRIPTION_ID}" ]]; then
     curl "https://mimix.chargify.com/subscriptions/${OPT_SUBSCRIPTION_ID}/metadata.json" \
-         -u "${VAL_CHARGIFY_USERNAME}:X" \
          -X POST \
-         -H 'content-type: application/json' \
-         -d "{ \"metadata\": [ {
-                 \"name\": \"Choose a Name for This Miki\",
-                 \"value\": \"${OPT_NAME}\"
-             } ] }"
+         -u "${VAL_CHARGIFY_USERNAME}:X" \
+         -H "Content-Type: application/json" \
+         -d "{
+               \"metadata\": [
+                 {
+                   \"name\": \"Choose a Name for This Miki\",
+                   \"value\": \"${OPT_NAME}\"
+                 }
+               ]
+            }" || return 0
   fi
 }
 
@@ -963,11 +967,11 @@ function notify_auth0 () {
   local token=$(curl -s -X POST \
                      --url "https://mimix.us.auth0.com/oauth/token" \
                      -H 'content-type: application/json' \
-                     -d @auth0_file | jq -r '.access_token')
+                     -d @"${auth0_file}" | jq -r '.access_token')
 
   curl "https://mimix.us.auth0.com/api/v2/users" \
-       -H "Authorization: Bearer ${token}" \
        -X POST \
+       -H "Authorization: Bearer ${token}" \
        -H "Content-Type: application/json" \
        -d "{
             \"user_id\": \"${OPT_NAME}\",
@@ -979,7 +983,7 @@ function notify_auth0 () {
             \"blocked\": false,
             \"email_verified\": false,
             \"verify_email\": false
-           }"
+           }" || return 0
 }
 
 function remote_install () {
