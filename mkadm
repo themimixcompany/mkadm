@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.8.1"
+readonly VERSION="1.8.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -922,30 +922,12 @@ function restart_miki_service () {
   run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl restart miki.service"
 }
 
-function notify_hook () {
-  debug ${FUNCNAME[0]} "$@"
-
-  curl "${VAL_HOOK_URL}/control" \
-       -H "Content-Type: application/json" \
-       -X POST \
-       -d "{
-             \"data\":
-             {
-               \"subscription_id\": \"${OPT_SUBSCRIPTION_ID}\",
-               \"name\": \"${OPT_NAME}\",
-               \"address\": \"${OPT_DROPLET_ADDRESS}\",
-               \"username\": \"${OPT_EMAIL}\",
-               \"password\": \"${VAL_ADMIN_PASSWORD}\"
-             }
-           }"
-}
-
 function notify_chargify () {
   debug ${FUNCNAME[0]} "$@"
 
   if [[ -n "${OPT_SUBSCRIPTION_ID}" ]]; then
     curl "https://mimix.chargify.com/subscriptions/${OPT_SUBSCRIPTION_ID}/metadata.json" \
-         -X POST \
+         -s -X POST \
          -u "${VAL_CHARGIFY_USERNAME}:X" \
          -H "Content-Type: application/json" \
          -d "{
@@ -964,13 +946,13 @@ function notify_auth0 () {
 
   local auth0_file=$HOME/.auth0.json
 
-  local token=$(curl -s -X POST \
-                     --url "https://mimix.us.auth0.com/oauth/token" \
+  local token=$(curl "https://mimix.us.auth0.com/oauth/token" \
+                     -s -X POST \
                      -H 'content-type: application/json' \
                      -d @"${auth0_file}" | jq -r '.access_token')
 
   curl "https://mimix.us.auth0.com/api/v2/users" \
-       -X POST \
+       -s -X POST \
        -H "Authorization: Bearer ${token}" \
        -H "Content-Type: application/json" \
        -d "{
@@ -984,6 +966,24 @@ function notify_auth0 () {
             \"email_verified\": false,
             \"verify_email\": false
            }" || return 0
+}
+
+function notify_hook () {
+  debug ${FUNCNAME[0]} "$@"
+
+  curl "${VAL_HOOK_URL}/control" \
+       -s -X POST \
+       -H "Content-Type: application/json" \
+       -d "{
+             \"data\":
+             {
+               \"subscription_id\": \"${OPT_SUBSCRIPTION_ID}\",
+               \"name\": \"${OPT_NAME}\",
+               \"address\": \"${OPT_DROPLET_ADDRESS}\",
+               \"username\": \"${OPT_EMAIL}\",
+               \"password\": \"${VAL_ADMIN_PASSWORD}\"
+             }
+           }"
 }
 
 function remote_install () {
@@ -1017,9 +1017,9 @@ function remote_install () {
     reset_admin_password
     start_miki_service
     display_greeting
-    notify_hook
     notify_chargify
     notify_auth0
+    notify_hook
   fi
 }
 
