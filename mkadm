@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.7.3"
+readonly VERSION="1.8.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -160,7 +160,7 @@ function run_rsync () {
 function parse_arguments () {
   debug ${FUNCNAME[0]} "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xrtO:D:CN: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,gc,new-name:,subscription-id:,data: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xrtO:D:CN: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,gc,new-name:,subscription-id:,sid:,data: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -223,7 +223,7 @@ function parse_arguments () {
       (-C|--check-name) OPT_CHECK_NAME=true; shift ;;
       (--garbage-collect|--gc) OPT_GARBAGE_COLLECT=true; shift ;;
       (-N|--new-name) OPT_NEW_NAME=$2; shift ;;
-      (--subscription-id) OPT_SUBSCRIPTION_ID=$2; shift ;;
+      (--subscription-id|--sid) OPT_SUBSCRIPTION_ID=$2; shift ;;
       (--data) OPT_DATA=$2; shift ;;
       (--) shift; break ;;
       (*) break ;;
@@ -371,60 +371,60 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-      --help                    Show this help
-      --debug                   Enable debugging mode
-      --verbose                 Enable verbose output
-      --version                 Display program version info
-  -n, --name                    Set the name of the instance
-  -e, --email                   Set the email address of the admin account
-      --wiki-name               Set wiki name
-      --wiki-domain             Set wiki domain
-      --wiki-resources          Set path of wiki resources
-      --company-name            Set company name
-      --company-domain          Set company domain
-  -V, --package-version         Set version in package.json
-      --enable-wiki-ssl         Enable wiki config SSL
-      --enable-db-ssl           Enable database config SSL
-  -p, --pgadm-path              Specify the path of the pgadm program
-      --install-path            Specify the installation path of Miki on the instance
-  -i, --install-remotely        Flag to perform remote installation
-  -K, --remove-self-ssh-key     Remove the SSH key of the host from the allowed SSH keys
-  -k, --ssh-keys                Comma-separated list of allowed SSH keys on the instance
-      --droplet-name            Set the name of droplet to manage
-      --database-name           Set the name of the database
-      --database-user           Set the name of the database user
-      --database-init           Specify the path to the database dump to import on the instance
-      --no-database-init        Do not initialize the instance with a database dump
-      --firewall-name           Set the name of firewall for this droplet
-  -A, --firewall-addresses      Comma-separated list of IP addresses to allow on the droplet
-  -P, --firewall-ports          Comma-separated list of allowed ports on the droplet
-  -f, --create-firewall         Create a firewall based from the instance name
-  -H, --host                    Override the name of the remote host
-  -Y, --yaml-filter             Send an updating YAML filter to the instance
-  -y, --query-filter            Send a query YAML filter to the instance
-      --enable-ssl              Enable SSL on the remote instance
-      --disable-ssl             Disable SSL on the remote instance
-      --domain-name             Set the domain name of the remote instance
-  -l, --list-instances          List all instances
-  -s, --ssh                     Connect to the instance via SSH
-  -c, --command                 Run an arbitrary command to the instance
-  -S, --sql                     Connect to the SQL prompt of the instance
-  -F  --sql-file                Specify the SQL file to upload to the instance
-  -x, --expunge-instance        Expunge the instance
-  -r, --reset-admin-password    Reset the admin password of the instance
-  -t, --create-support-account  Create a support account on the instance
-      --power-on                Turn on the droplet
-      --power-off               Turn off the droplet
-      --import-dump             Import a database dump into the instance
-      --export-dump             Export the database dump from the instance
-      --restart-miki            Restart the Miki service
-      --restart-machine         Restart the remote machine
-  -O, --origin-path             Specify the origin path when copying files
-  -D, --destination-path        Specify the destination path when copying files
-  -C, --check-name              Return true if an instance already exits
-      --garbage-collect, --gc   Delete leftover files and directories
-  -N, --new-name                The new name for the instance
-      --subscription-id         The Chargify subscription ID
+      --help                     Show this help
+      --debug                    Enable debugging mode
+      --verbose                  Enable verbose output
+      --version                  Display program version info
+  -n, --name                     Set the name of the instance
+  -e, --email                    Set the email address of the admin account
+      --wiki-name                Set wiki name
+      --wiki-domain              Set wiki domain
+      --wiki-resources           Set path of wiki resources
+      --company-name             Set company name
+      --company-domain           Set company domain
+  -V, --package-version          Set version in package.json
+      --enable-wiki-ssl          Enable wiki config SSL
+      --enable-db-ssl            Enable database config SSL
+  -p, --pgadm-path               Specify the path of the pgadm program
+      --install-path             Specify the installation path of Miki on the instance
+  -i, --install-remotely         Flag to perform remote installation
+  -K, --remove-self-ssh-key      Remove the SSH key of the host from the allowed SSH keys
+  -k, --ssh-keys                 Comma-separated list of allowed SSH keys on the instance
+      --droplet-name             Set the name of droplet to manage
+      --database-name            Set the name of the database
+      --database-user            Set the name of the database user
+      --database-init            Specify the path to the database dump to import on the instance
+      --no-database-init         Do not initialize the instance with a database dump
+      --firewall-name            Set the name of firewall for this droplet
+  -A, --firewall-addresses       Comma-separated list of IP addresses to allow on the droplet
+  -P, --firewall-ports           Comma-separated list of allowed ports on the droplet
+  -f, --create-firewall          Create a firewall based from the instance name
+  -H, --host                     Override the name of the remote host
+  -Y, --yaml-filter              Send an updating YAML filter to the instance
+  -y, --query-filter             Send a query YAML filter to the instance
+      --enable-ssl               Enable SSL on the remote instance
+      --disable-ssl              Disable SSL on the remote instance
+      --domain-name              Set the domain name of the remote instance
+  -l, --list-instances           List all instances
+  -s, --ssh                      Connect to the instance via SSH
+  -c, --command                  Run an arbitrary command to the instance
+  -S, --sql                      Connect to the SQL prompt of the instance
+  -F  --sql-file                 Specify the SQL file to upload to the instance
+  -x, --expunge-instance         Expunge the instance
+  -r, --reset-admin-password     Reset the admin password of the instance
+  -t, --create-support-account   Create a support account on the instance
+      --power-on                 Turn on the droplet
+      --power-off                Turn off the droplet
+      --import-dump              Import a database dump into the instance
+      --export-dump              Export the database dump from the instance
+      --restart-miki             Restart the Miki service
+      --restart-machine          Restart the remote machine
+  -O, --origin-path              Specify the origin path when copying files
+  -D, --destination-path         Specify the destination path when copying files
+  -C, --check-name               Return true if an instance already exits
+      --garbage-collect, --gc    Delete leftover files and directories
+  -N, --new-name                 The new name for the instance
+      --subscription-id, --sid   The Chargify subscription ID
 EOF
   exit 0
 }
@@ -955,6 +955,33 @@ function notify_chargify () {
   fi
 }
 
+function notify_auth0 () {
+  debug ${FUNCNAME[0]} "$@"
+
+  local auth0_file=$HOME/.auth0.json
+
+  local token=$(curl -s -X POST \
+                     --url "https://mimix.us.auth0.com/oauth/token" \
+                     -H 'content-type: application/json' \
+                     -d @auth0_file | jq -r '.access_token')
+
+  curl "https://mimix.us.auth0.com/api/v2/users" \
+       -H "Authorization: Bearer ${token}" \
+       -X POST \
+       -H "Content-Type: application/json" \
+       -d "{
+            \"user_id\": \"${OPT_NAME}\",
+            \"email\": \"${OPT_EMAIL}\",
+            \"connection\": \"Username-Password-Authentication\",
+            \"password\": \"${VAL_ADMIN_PASSWORD}\",
+            \"user_metadata\": {},
+            \"app_metadata\": {},
+            \"blocked\": false,
+            \"email_verified\": false,
+            \"verify_email\": false
+           }"
+}
+
 function remote_install () {
   debug ${FUNCNAME[0]} "$@"
 
@@ -988,6 +1015,7 @@ function remote_install () {
     display_greeting
     notify_hook
     notify_chargify
+    notify_auth0
   fi
 }
 
