@@ -34,7 +34,6 @@ VAL_DROPLET_NAME=
 VAL_FIREWALL_NAME=
 VAL_PASSWORD_FILE=
 
-OPT_RESET_ADMIN_PASSWORD=
 VAL_ADMIN_PASSWORD=
 VAL_ADMIN_PASSWORD_HASH=
 VAL_ADMIN_SQL_LOCAL_FILE=
@@ -85,6 +84,7 @@ OPT_SQL=
 OPT_SQL_FILE=
 OPT_EXPUNGE_INSTANCE=
 OPT_LIST_INSTANCES=
+OPT_RESET_ADMIN_PASSWORD=
 OPT_POWER_ON=
 OPT_POWER_OFF=
 OPT_IMPORT_DUMP=
@@ -988,10 +988,10 @@ EOF
 
 
   curl "https://mimix.us.auth0.com/api/v2/jobs/verification-email" \
-       -X POST \
+       -s -X POST \
        -H "Authorization: Bearer ${token}" \
        -H "Content-Type: application/json" \
-       -d "${json2}"
+       -d "${json2}" || return 0
 }
 
 function notify_hook () {
