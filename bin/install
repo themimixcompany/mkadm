@@ -44,7 +44,7 @@ function debug () {
 }
 
 function parse_arguments () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   local opts=$(getopt -n "${SELF}" --options s:i:I: --longoptions help,debug,verbose,sleep:,install-path:,database-init: -- "$@")
 
@@ -71,7 +71,7 @@ function parse_arguments () {
 }
 
 function process_arguments () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_HELP}" ]]; then
     display_usage
@@ -81,7 +81,7 @@ function process_arguments () {
 }
 
 function display_usage () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF
 ${SELF} v${VERSION} [OPTIONS]...
@@ -98,7 +98,7 @@ EOF
 }
 
 function extract_tarball () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   if [[ -f "${HOME}/miki.tar.gz" ]]; then
     tar -C /var -xf "${HOME}/miki.tar.gz"
@@ -106,39 +106,39 @@ function extract_tarball () {
 }
 
 function install_node_js () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   curl -sL https://deb.nodesource.com/setup_15.x | sudo -E bash -
   apt-get install -y nodejs build-essential software-properties-common
 }
 
 function install_postgres () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   apt-get install -y postgresql postgresql-contrib postgresql-client-common
 }
 
 function load_init_sql () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   sudo -u postgres psql --file="${VAL_INSTALL_PATH}/sql/init.sql"
 }
 
 function install_tools () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   apt-get install -y jq python3-pip
   pip3 install yq
 }
 
 function install_miki_service () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   cp "${SELF_DIR}/miki.service" /etc/systemd/system
 }
 
 function initialize_database () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_DATABASE_INIT}" ]]; then
     /usr/local/bin/pgadm -If "${OPT_DATABASE_INIT}" || true
@@ -147,7 +147,7 @@ function initialize_database () {
 }
 
 function load_post_sql () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   sleep "${VAL_SLEEP}"
 
@@ -155,26 +155,26 @@ function load_post_sql () {
 }
 
 function enable_miki_service () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   systemctl daemon-reload
   systemctl enable miki.service
 }
 
 function start_miki_service () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   systemctl start miki.service
 }
 
 function stop_miki_service () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   systemctl stop miki.service
 }
 
 function main () {
-  debug ${FUNCNAME[0]} "$@"
+  debug "${FUNCNAME[0]}" "$@"
 
   parse_arguments "$@"
   process_arguments "$@"
@@ -186,9 +186,6 @@ function main () {
   install_miki_service
   initialize_database
   enable_miki_service
-
-  #start_miki_service
-  #load_post_sql
 }
 
 main "$@"
