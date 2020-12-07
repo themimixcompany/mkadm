@@ -1046,10 +1046,10 @@ function remote_install () {
 
     reset_admin_password
     start_miki_service
-    display_greeting
     notify_chargify
     notify_auth0
     notify_hook
+    display_greeting
   fi
 }
 
@@ -1434,6 +1434,7 @@ function garbage_collect () {
   rm -rf /tmp/tmp.*.miki
   rm -rf /tmp/yarn--*
   rm -rf /tmp/mkadm.*.log
+  rm -rf /tmp/core-js-banners
 
   exit 0
 }
