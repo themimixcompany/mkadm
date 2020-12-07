@@ -16,13 +16,13 @@
                   v-list-item-avatar
                     v-icon.blue.white--text mdi-application-export
                   v-list-item-content
-                    v-list-item-title {{ $t('admin:system.currentVersion') }}
+                    v-list-item-title Miki Concierge
                     v-list-item-subtitle {{ info.currentVersion }}
                 v-list-item
                   v-list-item-avatar
                     v-icon.blue.white--text mdi-inbox-arrow-up
                   v-list-item-content
-                    v-list-item-title {{ $t('admin:system.latestVersion') }}
+                    v-list-item-title Miki Core
                     v-list-item-subtitle {{ info.latestVersion }}
               v-card-actions(v-if='info.upgradeCapable && !isLatestVersion && info.platform === `docker`', :class='$vuetify.theme.dark ? `grey darken-3-d5` : `indigo lighten-5`')
                 .caption.indigo--text.pl-3(:class='$vuetify.theme.dark ? `text--lighten-4` : ``') Wiki.js can perform the upgrade to the latest version for you.
