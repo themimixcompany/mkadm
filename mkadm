@@ -972,7 +972,7 @@ function notify_auth0 () {
   "connection": "Username-Password-Authentication",
   "password": "${VAL_ADMIN_PASSWORD}",
   "email_verified": false,
-  "app_metadata":   {
+  "app_metadata": {
     "ip": "http://${OPT_DROPLET_ADDRESS}",
     "nickname": "${OPT_NAME}"
   }
