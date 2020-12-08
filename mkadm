@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.9.1"
+readonly VERSION="1.9.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -612,6 +612,8 @@ function install_assets () {
   rsync -a ${VAL_RESOURCES_DIR}/assets/favicons assets
   rsync -a ${VAL_RESOURCES_DIR}/assets/svg assets
   rsync -a ${VAL_RESOURCES_DIR}/assets/img/splash assets/img
+  rsync -a ${VAL_RESOURCES_DIR}/assets/fonts assets
+  rsync -a ${VAL_RESOURCES_DIR}/assets/css assets
 }
 
 function create_db_directory () {
