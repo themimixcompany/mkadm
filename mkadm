@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.9.3"
+readonly VERSION="1.9.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -971,7 +971,11 @@ function notify_auth0 () {
   "email": "${OPT_EMAIL}",
   "connection": "Username-Password-Authentication",
   "password": "${VAL_ADMIN_PASSWORD}",
-  "email_verified": false
+  "email_verified": false,
+  "app_metadata":   {
+    "ip": "http://${OPT_DROPLET_ADDRESS}",
+    "nickname": "${OPT_NAME}"
+  }
 }
 EOF
 )
