@@ -99,20 +99,17 @@ EOF
   exit 0
 }
 
-function stage () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  if [[ -f "${VAL_SCREEN_LOG_FILE}" ]]; then
-    rm -f "${VAL_SCREEN_LOG_FILE}"
-  fi
-}
-
 function run () {
   debug "${FUNCNAME[0]}" "$@"
 
+  local logfile=
+
   if [[ $# -ge 3 ]]; then
-    screen -L -Logfile "${VAL_SCREEN_LOG_FILE}" \
-           -dmS deploy mkadm -n "${1}" -e "${2}" --sid "${3}"
+    logfile="/tmp/mkadm.${3}.log"
+
+    [[ -f "${logfile}" ]] && rm -f "${logfile}"
+
+    screen -L -Logfile "${logfile}" -dmS deploy mkadm -n "${1}" -e "${2}" --sid "${3}"
   else
     display_usage
   fi
@@ -124,7 +121,6 @@ function main () {
   parse_arguments "$@"
   process_arguments "$@"
 
-  stage
   run "$@"
 }
 
