@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.9.0"
+readonly VERSION="1.9.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -267,7 +267,7 @@ function set_domain_name () {
   if [[ -n "${OPT_WIKI_DOMAIN}" ]]; then
     VAL_DOMAIN_NAME="${OPT_WIKI_DOMAIN}"
   elif [[ -n "${OPT_NAME}" ]]; then
-    VAL_DOMAIN_NAME="${OPT_NAME}.${VAL_DEFAULT_DOMAIN}"
+    VAL_DOMAIN_NAME="${OPT_NAME,,}.${VAL_DEFAULT_DOMAIN}"
   else
     VAL_DOMAIN_NAME="${VAL_MIKI_DOMAIN}"
   fi
