@@ -33,7 +33,13 @@ html
     link(rel='stylesheet' href='/_assets/css/inter.css')
 
     //- Icon Set
-    if config.theming.iconset === 'fa'
+    if config.theming.iconset === 'fa6'
+      link(
+        type='text/css'
+        rel='stylesheet'
+        href='/_assets/css/fa-all.css'
+        )
+    else if config.theming.iconset === 'fa'
       link(
         type='text/css'
         rel='stylesheet'

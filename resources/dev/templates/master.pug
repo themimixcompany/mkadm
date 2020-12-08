@@ -43,7 +43,13 @@ html(lang=siteConfig.lang)
         siteConfig.devMode = true
 
     //- Icon Set
-    if config.theming.iconset === 'fa'
+    if config.theming.iconset === 'fa6'
+      link(
+        type='text/css'
+        rel='stylesheet'
+        href='/_assets/css/fa-all.css'
+        )
+    else if config.theming.iconset === 'fa'
       link(
         type='text/css'
         rel='stylesheet'
