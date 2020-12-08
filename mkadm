@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.9.2"
+readonly VERSION="1.9.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -540,6 +540,7 @@ function copy_vue_files () {
   debug "${FUNCNAME[0]}" "$@"
 
   rsync -a "${VAL_RESOURCES_DIR}/client" .
+  rsync -a "${VAL_RESOURCES_DIR}/dev" .
 }
 
 function update_files () {
