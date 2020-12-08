@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.10.2"
+readonly VERSION="1.10.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -44,8 +44,6 @@ VAL_SUPPORT_PASSWORD=
 VAL_SUPPORT_PASSWORD_HASH=
 VAL_SUPPORT_SQL_LOCAL_FILE=
 VAL_SUPPORT_SQL_REMOTE_FILE=
-
-VAL_AUTH0_TOKEN=
 
 OPT_NAME=
 OPT_EMAIL=
@@ -967,14 +965,10 @@ function get_auth0_token () {
        -d @"${auth0_file}" | jq -r '.access_token'
 }
 
-function set_auth0_token () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  VAL_AUTH0_TOKEN=$(get_auth0_token)
-}
-
 function notify_auth0 () {
   debug "${FUNCNAME[0]}" "$@"
+
+  local token=$(get_auth0_token)
 
   local json1=$(jq . << EOF
 {
@@ -984,7 +978,7 @@ function notify_auth0 () {
   "password": "${VAL_ADMIN_PASSWORD}",
   "email_verified": false,
   "app_metadata": {
-    "ip": "http://${OPT_DROPLET_ADDRESS}",
+    "ip": "${OPT_DROPLET_ADDRESS}",
     "nickname": "${OPT_NAME}"
   }
 }
@@ -1000,14 +994,14 @@ EOF
 
   curl "https://mimix.us.auth0.com/api/v2/users" \
        -s -X POST \
-       -H "Authorization: Bearer ${VAL_AUTH0_TOKEN}" \
+       -H "Authorization: Bearer ${token}" \
        -H "Content-Type: application/json" \
        -d "${json1}" || return 0
 
 
   curl "https://mimix.us.auth0.com/api/v2/jobs/verification-email" \
        -s -X POST \
-       -H "Authorization: Bearer ${VAL_AUTH0_TOKEN}" \
+       -H "Authorization: Bearer ${token}" \
        -H "Content-Type: application/json" \
        -d "${json2}" || return 0
 }
@@ -1015,10 +1009,12 @@ EOF
 function delete_auth0_user () {
   debug "${FUNCNAME[0]}" "$@"
 
+  local token=$(get_auth0_token)
+
   if [[ -n "${OPT_NAME}" ]]; then
     curl "https://mimix.us.auth0.com/api/v2/users/auth0%7C${OPT_NAME}" \
-         -H "Authorization: Bearer ${VAL_AUTH0_TOKEN}" \
-         -X DELETE
+         -s -X DELETE \
+         -H "Authorization: Bearer ${token}"
   fi
 
   exit 0
@@ -1077,10 +1073,7 @@ function remote_install () {
     reset_admin_password
     start_miki_service
     notify_chargify
-
-    set_auth0_token
     notify_auth0
-
     notify_hook
     display_greeting
   fi
