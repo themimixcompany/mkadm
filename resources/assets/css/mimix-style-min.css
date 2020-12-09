@@ -1,0 +1,22 @@
+
+/* Hide TOC & Header
+div .container.grey.pa-0.container--fluid.lighten-4 {
+  display: none
+}
+div .flex.page-col-sd.lg3.xl2 {
+  display: none
+}
+header.v-sheet.theme--light.v-toolbar.v-toolbar--dense.v-toolbar--flat.grey.lighten-3 {
+  display: none
+}
+*/
+
+/*  Hide external link arrow icon */
+.v-main .contents a.is-external-link::after {
+  display: none
+}
+
+/*  Hide underline style on links */
+a {
+  text-decoration: none
+}
