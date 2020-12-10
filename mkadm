@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.12.1"
+readonly VERSION="1.12.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1527,10 +1527,10 @@ function snapshot_instance () {
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
   local date=$(date "+%Y%m%d%H%M%S")
-  local tarball="${${OPT_SNAPSHOT_TARBALL}:-miki-${OPT_NAME}.${date}.tar.xz}"
+  local tarball="${OPT_SNAPSHOT_TARBALL:-miki-${OPT_NAME}.${date}.tar.xz}"
 
   run_ssh "${OPT_DROPLET_USER}@${address}" "rm -rf /tmp/miki; cp -a /var/miki /tmp; rm -f /tmp/miki/config.yml"
-  run_ssh "${OPT_DROPLET_USER}@${address}" "tar -C /tmp -cJf miki.tar.xz miki"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "tar -C /tmp -cJf /tmp/miki.tar.xz miki"
   run_rsync "${OPT_DROPLET_USER}@${address}:/tmp/miki.tar.xz" "${tarball}"
   run_ssh "${OPT_DROPLET_USER}@${address}" "rm -rf /tmp/miki /tmp/miki.tar.xz"
 
