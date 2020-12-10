@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.11.3"
+readonly VERSION="1.12.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -100,8 +100,10 @@ OPT_NEW_NAME=
 OPT_SUBSCRIPTION_ID=
 OPT_DATA=
 OPT_DELETE_AUTH0_USER=
-OPT_UPGRADE=
-OPT_UPGRADE_TARBALL="${SELF_DIR}/dat/miki.tar.xz"
+OPT_REPLACE_INSTANCE=
+OPT_REPLACE_TARBALL="${SELF_DIR}/dat/miki.tar.xz"
+OPT_SNAPSHOT_INSTANCE=
+OPT_SNAPSHOT_TARBALL=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -164,7 +166,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtO:D:CN:dUT: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,gc,new-name:,subscription-id:,sid:,data:,delete-auth0-user,upgrade,upgrade-tarball: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:dRT --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,import-dump:,export-dump:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,sid:,data:,delete-auth0-user,replace-instance,replace-tarball: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -226,13 +228,15 @@ function parse_arguments () {
       (-O|--origin-path) OPT_ORIGIN_PATH=$2; shift 2 ;;
       (-D|--destination-path) OPT_DESTINATION_PATH=$2; shift 2 ;;
       (-C|--check-name) OPT_CHECK_NAME=true; shift ;;
-      (--garbage-collect|--gc) OPT_GARBAGE_COLLECT=true; shift ;;
+      (-G|--garbage-collect) OPT_GARBAGE_COLLECT=true; shift ;;
       (-N|--new-name) OPT_NEW_NAME=$2; shift ;;
       (--subscription-id|--sid) OPT_SUBSCRIPTION_ID=$2; shift ;;
       (--data) OPT_DATA=$2; shift ;;
       (-d|--delete-auth0-user) OPT_DELETE_AUTH0_USER=true; shift ;;
-      (-U|--upgrade) OPT_UPGRADE=true; shift ;;
-      (-T|--upgrade-tarball) OPT_UPGRADE_TARBALL=$2; shift 2 ;;
+      (-R|--replace-instance) OPT_REPLACE_INSTANCE=true; shift ;;
+      (--replace-tarball) OPT_REPLACE_TARBALL=$2; shift 2 ;;
+      (-T|--snapshot-instance) OPT_SNAPSHOT_INSTANCE=true; shift ;;
+      (--snapshot-tarball) OPT_SNAPSHOT_TARBALL=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -367,8 +371,10 @@ function process_arguments () {
     rename_instance
   elif [[ -n "${OPT_DELETE_AUTH0_USER}" ]]; then
     delete_auth0_user
-  elif [[ -n "${OPT_UPGRADE}" && -n "${OPT_UPGRADE_TARBALL}" ]]; then
-    upgrade_instance
+  elif [[ -n "${OPT_REPLACE_INSTANCE}" && -n "${OPT_REPLACE_TARBALL}" ]]; then
+    replace_instance
+  elif [[ -n "${OPT_SNAPSHOT_INSTANCE}" ]]; then
+    snapshot_instance
   elif [[ -n "${OPT_MIKI_DIRECTORY}" && ! "$(basename ${OPT_MIKI_DIRECTORY})" == "${VAL_BASE_NAME}" ]]; then
     display_usage
   elif [[ -z "${OPT_WIKI_NAME}" || -z "${OPT_WIKI_RESOURCES}" || -z "${OPT_COMPANY_NAME}" || -z "${OPT_COMPANY_DOMAIN}" ]]; then
@@ -437,12 +443,12 @@ OPTIONS:
   -O, --origin-path              Specify the origin path when copying files
   -D, --destination-path         Specify the destination path when copying files
   -C, --check-name               Return true if an instance already exits
-      --garbage-collect, --gc    Delete leftover files and directories
+  -G, --garbage-collect          Delete leftover files and directories
   -N, --new-name                 The new name for the instance
       --subscription-id, --sid   The Chargify subscription ID
   -d, --delete-auth0-user        Delete the Auth0 user specified by -n
-  -U, --upgrade                  Upgrade an instance
-  -T, --upgrade-tarball          Specify the tarball for the instance upgrade
+  -R, --replace                  Replace an instance
+  -T, --replace-tarball          Specify the tarball for the instance replace
 EOF
   exit 0
 }
@@ -1500,18 +1506,33 @@ function rename_instance () {
   exit 0
 }
 
-function upgrade_instance () {
+function replace_instance () {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
   local tarball="/tmp/miki.tar.xz"
   local date=$(date "+%Y%m%d%H%M%S")
 
-  run_rsync "${OPT_UPGRADE_TARBALL}" "${OPT_DROPLET_USER}@${address}:/tmp"
+  run_rsync "${OPT_REPLACE_TARBALL}" "${OPT_DROPLET_USER}@${address}:/tmp"
   run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl stop miki.service"
   run_ssh "${OPT_DROPLET_USER}@${address}" "mv /var/miki /var/miki.${date}"
   run_ssh "${OPT_DROPLET_USER}@${address}" "tar -C /var -xJf ${tarball}; cp /var/miki.${date}/config.yml /var/miki"
   run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl start miki.service"
+
+  exit 0
+}
+
+function snapshot_instance () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
+  local date=$(date "+%Y%m%d%H%M%S")
+  local tarball="${${OPT_SNAPSHOT_TARBALL}:-miki-${OPT_NAME}.${date}.tar.xz}"
+
+  run_ssh "${OPT_DROPLET_USER}@${address}" "rm -rf /tmp/miki; cp -a /var/miki /tmp; rm -f /tmp/miki/config.yml"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "tar -C /tmp -cJf miki.tar.xz miki"
+  run_rsync "${OPT_DROPLET_USER}@${address}:/tmp/miki.tar.xz" "${tarball}"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "rm -rf /tmp/miki /tmp/miki.tar.xz"
 
   exit 0
 }
