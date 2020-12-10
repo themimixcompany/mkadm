@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.12.2"
+readonly VERSION="1.12.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -447,8 +447,10 @@ OPTIONS:
   -N, --new-name                 The new name for the instance
       --subscription-id, --sid   The Chargify subscription ID
   -d, --delete-auth0-user        Delete the Auth0 user specified by -n
-  -R, --replace                  Replace an instance
-  -T, --replace-tarball          Specify the tarball for the instance replace
+  -R, --replace-instance         Replace an instance
+      --replace-tarball          Specify the tarball for the instance replace
+  -T, --snapshot-instance        Create a tarball snapshot of an instance
+      --snapshot-tarball         Specify the tarball for the instance snapshot
 EOF
   exit 0
 }
