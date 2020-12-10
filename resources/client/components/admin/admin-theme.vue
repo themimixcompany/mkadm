@@ -147,8 +147,8 @@ export default {
         { text: 'Default', author: 'requarks.io', value: 'default', isInstalled: true, installDate: '', updatedAt: '' }
       ],
       iconsets: [
-        { text: 'Material Design Icons (default)', value: 'mdi' },
-        { text: 'Font Awesome 6', value: 'fa6' },
+        { text: 'Font Awesome 6 (default)', value: 'fa6' },
+        { text: 'Material Design Icons', value: 'mdi' },
         { text: 'Font Awesome 5', value: 'fa' },
         { text: 'Font Awesome 4', value: 'fa4' }
       ],
