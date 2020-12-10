@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.11.2"
+readonly VERSION="1.11.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1505,9 +1505,13 @@ function upgrade_instance () {
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
   local tarball="/tmp/miki.tar.xz"
+  local date=$(date "+%Y%m%d%H%M%S")
 
   run_rsync "${OPT_UPGRADE_TARBALL}" "${OPT_DROPLET_USER}@${address}:/tmp"
-  run_ssh "${OPT_DROPLET_USER}@${address}" "tar -C /var -xJf ${tarball}; rm -f ${tarball}; systemctl restart miki.service"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl stop miki.service"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "mv /var/miki /var/miki.${date}"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "tar -C /var -xJf ${tarball}; cp /var/miki.${date}/config.yml /var/miki"
+  run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl start miki.service"
 
   exit 0
 }
