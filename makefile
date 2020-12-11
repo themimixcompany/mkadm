@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 .DELETE_ON_ERROR:
 .RECIPEPREFIX +=
 
-.PHONY: all build
+.PHONY: all build clean images
 
 DIR := $(shell basename "$(shell pwd)")
 NAME = mkcmd
@@ -27,5 +27,12 @@ all: build
 build:
   docker build -f $(DOCKERFILE) -t $(NAME) .
 
-tags:
-  ctags -eR --language-force=sh
+clean:
+  rm -rf dat
+
+images: clean
+  mkdir -p dat
+  mkadm -n core --export-dump dat/miki-core.pg
+  mkadm -n base -e rom@mimix.io
+  mkadm -Tn base --snapshot-tarball dat/miki-base.tar.xz
+  mkadm -Xn base
