@@ -73,7 +73,7 @@ To connect to goliath via SSH, run:
 
 To connect to the SQL command line on goliath, run:
 
-    mkadm -n goliath -Q
+    mkadm -Sn goliath
 
 To load an SQL file, run:
 
@@ -89,11 +89,11 @@ To expunge goliath, run:
 
 To create a database dump from goliath, run:
 
-    mkadm -n goliath --export-dump file.pg
+    mkadm -n goliath --dump-database file.pg.xz
 
 To upload a database dump to goliath, run:
 
-    mkadm -n goliath --import-dump file.pg
+    mkadm -n goliath --restore-database file.pg.xz
 
 To list all the instances, run:
 
