@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.0.0"
+readonly VERSION="2.1.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -571,14 +571,14 @@ function copy_vue_files () {
   rsync -a "${VAL_RESOURCES_DIR}/dev" .
 }
 
-function copy_seed () {
+function extract_seed () {
   debug "${FUNCNAME[0]}" "$@"
+
+  display_banner "Extracting seed ..."
 
   OPT_MIKI_DIRECTORY="$(mktemp -d --suffix .miki)/miki"
 
-  display_banner "Copying seed ..."
-
-  tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" -xf $HOME/miki.tar
+  tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" -xf $HOME/miki-seed.tar
   push "${OPT_MIKI_DIRECTORY}"
 }
 
@@ -925,18 +925,18 @@ function local_install () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_USE_CACHE}" ]]; then
-    copy_seed
+    extract_seed
   else
     initialize
     reset_repository
     npm_install
     delete_files
+    create_readme
+    create_local_config_yml
     copy_vue_files
     clone_locales_repository
   fi
 
-  create_readme
-  create_local_config_yml
   update_files
   update_package_json
   yarn_build
