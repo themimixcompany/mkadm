@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.12.5"
+readonly VERSION="2.0.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -28,6 +28,7 @@ readonly VAL_MIKI_REPOSITORY="https://github.com/themimixcompany/wiki"
 readonly VAL_MIKI_LOCALES_REPOSITORY="https://github.com/themimixcompany/wiki-localization"
 readonly VAL_HOOK_URL="http://hook"
 readonly VAL_CHARGIFY_USERNAME="jm6xz1asP3UlyizRoeC7UbeXsJ90x0wbY2bwOOg34"
+readonly VAL_SNAPSHOT_ID="74983549"
 
 VAL_DOMAIN_NAME=
 VAL_DROPLET_NAME=
@@ -105,6 +106,7 @@ OPT_REPLACE_TARBALL_BASE="miki-base.tar.xz"
 OPT_REPLACE_TARBALL="${SELF_DIR}/dat/${OPT_REPLACE_TARBALL_BASE}"
 OPT_SNAPSHOT_INSTANCE=
 OPT_SNAPSHOT_TARBALL=
+OPT_USE_CACHE=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -153,21 +155,21 @@ function run_ssh () {
 function run_scp () {
   debug "${FUNCNAME[0]}" "$@"
 
-  scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR "$@"
+  scp -c aes256-gcm@openssh.com -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR "$@"
 }
 
 function run_rsync () {
   debug "${FUNCNAME[0]}" "$@"
 
   rsync -avzL --delete \
-        -e "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR" \
+        -e "ssh -T -c aes256-gcm@openssh.com -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR" \
         "$@"
 }
 
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:dRT --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:dRTU --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -238,6 +240,7 @@ function parse_arguments () {
       (--replace-tarball) OPT_REPLACE_TARBALL=$2; shift 2 ;;
       (-T|--snapshot-instance) OPT_SNAPSHOT_INSTANCE=true; shift ;;
       (--snapshot-tarball) OPT_SNAPSHOT_TARBALL=$2; shift 2 ;;
+      (-U|--use-cache) OPT_USE_CACHE=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -481,9 +484,7 @@ function clone_miki_repository () {
 function delete_miki_directory () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -d "${OPT_MIKI_DIRECTORY}" ]]; then
-    rm -rf "${OPT_MIKI_DIRECTORY}"
-  fi
+  [[ -d "${OPT_MIKI_DIRECTORY}" ]] && rm -rf "${OPT_MIKI_DIRECTORY}"
 }
 
 function initialize () {
@@ -568,6 +569,17 @@ function copy_vue_files () {
 
   rsync -a "${VAL_RESOURCES_DIR}/client" .
   rsync -a "${VAL_RESOURCES_DIR}/dev" .
+}
+
+function copy_seed () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  OPT_MIKI_DIRECTORY="$(mktemp -d --suffix .miki)/miki"
+
+  display_banner "Copying seed ..."
+
+  tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" -xf $HOME/miki.tar
+  push "${OPT_MIKI_DIRECTORY}"
 }
 
 function update_files () {
@@ -782,7 +794,14 @@ function create_droplet () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_INSTALL_PATH}" && -n "${VAL_DROPLET_NAME}" ]]; then
-    OPT_DROPLET_ADDRESS=$(doadm -cdn "${VAL_DROPLET_NAME}" -k "${OPT_SSH_KEYS}" )
+    if [[ -n "${OPT_USE_CACHE}" ]]; then
+      OPT_DROPLET_ADDRESS=$(doadm -cdn "${VAL_DROPLET_NAME}" \
+                                  -k "${OPT_SSH_KEYS}" \
+                                  -i "${VAL_SNAPSHOT_ID}")
+    else
+      OPT_DROPLET_ADDRESS=$(doadm -cdn "${VAL_DROPLET_NAME}" \
+                                  -k "${OPT_SSH_KEYS}")
+    fi
     echo "${OPT_DROPLET_ADDRESS}"
   fi
 }
@@ -905,16 +924,20 @@ function local_install_p () {
 function local_install () {
   debug "${FUNCNAME[0]}" "$@"
 
-  initialize
-  reset_repository
-  npm_install
-  delete_files
+  if [[ -n "${OPT_USE_CACHE}" ]]; then
+    copy_seed
+  else
+    initialize
+    reset_repository
+    npm_install
+    delete_files
+    copy_vue_files
+    clone_locales_repository
+  fi
+
   create_readme
   create_local_config_yml
-
-  copy_vue_files
   update_files
-  clone_locales_repository
   update_package_json
   yarn_build
 
@@ -1079,7 +1102,7 @@ function remote_install () {
     copy_bin
 
     create_tarball
-    delete_miki_directory
+    #delete_miki_directory
 
     set_ssh_keys
     create_droplet
