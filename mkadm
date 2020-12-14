@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.1.0"
+readonly VERSION="2.1.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -15,7 +15,7 @@ OPT_VERSION=
 readonly VAL_BASE_NAME="miki"
 readonly VAL_WWW_NAME="www"
 readonly VAL_FW_NAME="fw"
-readonly VAL_SLEEP="30"
+readonly VAL_SLEEP="20"
 readonly VAL_RANDOM="$(od -t uI -N 4 /dev/urandom | awk '{print $2}' | sed 2d)"
 readonly VAL_BASE_COMMIT="2.5.159"
 readonly VAL_DEFAULT_PACKAGE_VERSION="1.0.0"
@@ -873,8 +873,14 @@ function install_miki () {
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
   local file="$(basename ${OPT_MIKI_DIRECTORY}).tar.gz"
-  local base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_PATH}/bin/install -i ${OPT_INSTALL_PATH}"
+  local base_cmd=
   local cmd=
+
+  if [[ "${OPT_USE_CACHE}" ]]; then
+    base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_PATH}/bin/install -Ui ${OPT_INSTALL_PATH}"
+  else
+    base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_PATH}/bin/install -i ${OPT_INSTALL_PATH}"
+  fi
 
   if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p && [[ -n "${OPT_DATABASE_INIT}" ]]; then
     cmd="${base_cmd} -I ${VAL_REMOTE_TMP}/$(basename ${OPT_DATABASE_INIT})"
