@@ -45,7 +45,7 @@ function debug () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options s:i:I:U --longoptions help,debug,verbose,sleep:,install-path:,database-init:,use-cache -- "$@")
+  local opts=$(getopt -n "${SELF}" --options s:i:I:U --longoptions help,debug,verbose,install-path:,database-init:,use-cache -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Exiting."
@@ -89,7 +89,6 @@ OPTIONS:
       --help              Show this help
       --debug             Enable debugging mode
       --verbose           Enable verbose output
-  -s, --sleep             Set the sleep time
   -i, --install-path      The path to install Miki on
   -I, --database-init     Initialize the database with a dump
 EOF
