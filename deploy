@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.2.1"
+readonly VERSION="1.3.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -109,7 +109,7 @@ function run () {
 
     [[ -f "${logfile}" ]] && rm -f "${logfile}"
 
-    screen -L -Logfile "${logfile}" -dmS "deploy.${3}" time mkadm -Un "${1}" -e "${2}" --subscription-id "${3}"
+    screen -L -Logfile "${logfile}" -dmS "deploy.${3}" mkadm -Un "${1}" -e "${2}" --subscription-id "${3}"
   else
     display_usage
   fi
