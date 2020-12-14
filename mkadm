@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.1.1"
+readonly VERSION="2.1.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1108,7 +1108,6 @@ function remote_install () {
     copy_bin
 
     create_tarball
-    #delete_miki_directory
 
     set_ssh_keys
     create_droplet
@@ -1128,6 +1127,8 @@ function remote_install () {
     notify_auth0
     notify_hook
     display_greeting
+
+    delete_miki_directory
   fi
 }
 
