@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.1.3"
+readonly VERSION="2.1.5"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -642,6 +642,7 @@ function yarn_build () {
   debug "${FUNCNAME[0]}" "$@"
 
   display_banner "Compiling sources ..."
+  export GENERATE_SOURCEMAP=false
   yarn build
 }
 
@@ -1240,9 +1241,7 @@ function send_command () {
 function expunge_instance () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -n "${OPT_EXPUNGE_INSTANCE}" ]]; then
-    doadm -xdn "${VAL_DROPLET_NAME}"
-  fi
+  doadm -xdn "${VAL_DROPLET_NAME}"
 
   exit $?
 }
@@ -1250,9 +1249,7 @@ function expunge_instance () {
 function force_expunge_instance () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -n "${OPT_FORCE_EXPUNGE_INSTANCE}" ]]; then
-    doadm -xdn "${VAL_DROPLET_NAME}" --force
-  fi
+  doadm -xdn "${VAL_DROPLET_NAME}" --force
 
   exit $?
 }
@@ -1260,11 +1257,9 @@ function force_expunge_instance () {
 function list_instances () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -n "${OPT_LIST_INSTANCES}" ]]; then
-    doadm -ld | awk "/[0-9]+\s+miki/" | column -t
-  fi
+  doadm -ld | awk "/[0-9]+\s+miki/" | column -t
 
-  exit 0
+  exit $?
 }
 
 function generate_hash () {
@@ -1446,7 +1441,7 @@ function restore_database () {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
-  local remote_file=$(mktemp --dry-run --suffix .pg)
+  local remote_file="$(mktemp --dry-run --suffix .pg).xz"
 
   run_scp "${OPT_RESTORE_DATABASE}" "${OPT_DROPLET_USER}@${address}:${remote_file}"
   run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgadm --delete -If ${remote_file}"
@@ -1458,7 +1453,7 @@ function dump_database () {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
-  local remote_file=$(mktemp --dry-run --suffix .pg)
+  local remote_file="$(mktemp --dry-run --suffix .pg).xz"
 
   run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgadm -Ef ${remote_file}"
   run_scp "${OPT_DROPLET_USER}@${address}:${remote_file}" "${OPT_DUMP_DATABASE}"
