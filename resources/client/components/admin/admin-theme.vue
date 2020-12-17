@@ -148,9 +148,7 @@ export default {
       ],
       iconsets: [
         { text: 'Font Awesome 6 (default)', value: 'fa6' },
-        { text: 'Material Design Icons', value: 'mdi' },
-        { text: 'Font Awesome 5', value: 'fa' },
-        { text: 'Font Awesome 4', value: 'fa4' }
+        { text: 'Material Design Icons', value: 'mdi' }
       ],
       config: {
         theme: 'default',
