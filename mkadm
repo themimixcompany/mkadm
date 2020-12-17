@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.2.1"
+readonly VERSION="2.2.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -415,7 +415,7 @@ OPTIONS:
   -i, --install-remotely          Flag to perform remote installation
   -K, --remove-self-ssh-key       Remove the SSH key of the host from the allowed SSH keys
   -k, --ssh-keys <CSV>            Comma-separated list of allowed SSH keys on the instance
-      --droplet-name <TEXT>       The name of droplet to manage
+      --droplet-name <TEXT>       The name of the droplet
       --database-name <TEXT>      The name of the database
       --database-user <TEXT>      The name of the database user
       --database-init <PATH>      The local path to the database dump to import on the instance
@@ -427,9 +427,9 @@ OPTIONS:
   -H, --host <TEXT>               Set to override the name of the remote host
   -Y, --yaml-filter <JQ>          Send an updating YAML filter to the instance
   -y, --query-filter <JQ>         Send a query YAML filter to the instance
-      --enable-ssl                Flag to enable SSL on the remote instance
-      --disable-ssl               Flag to Disable SSL on the remote instance
-      --domain-name <FQDN>        Set the domain name of the remote instance
+      --enable-ssl                Flag to enable SSL on the instance
+      --disable-ssl               Flag to Disable SSL on the instance
+      --domain-name <FQDN>        Set the domain name of the instance
   -l, --list-instances            Flag to list all instances
   -s, --ssh                       Flag to connect to the instance via SSH
   -c, --command <COMMAND>         Run an arbitrary command to the instance
@@ -439,8 +439,8 @@ OPTIONS:
   -X, --force-expunge-instance    Flag to expunge the instance without confirmations
   -r, --reset-admin-password      Flag to reset the admin password of the instance
   -t, --create-support-account    Flag to create a support account on the instance
-      --power-on                  Flag to turn on the instance
-      --power-off                 Flag to turn off the instance
+      --power-on                  Flag to turn the instance on
+      --power-off                 Flag to turn the instance off
       --restore-database <PATH>   The local path for the database file for restoration
       --dump-database <PATH>      The local path for the database file for dumping
       --restart-miki              Flag to restart the Miki service
@@ -455,7 +455,7 @@ OPTIONS:
       --replace-tarball <PATH>    The local tarball path for the instance replacement
   -T, --snapshot-instance         Flag to create a tarball snapshot of an instance
       --snapshot-tarball <PATH>   The local tarball path for the instance snapshot
-  -U, --use-cache                 Flag to use a prebuilt droplet for the instance
+  -U, --use-cache                 Flag to use a prebuilt droplet snapshot for the instance
 EOF
   exit 0
 }
@@ -1150,7 +1150,7 @@ function enable_ssl () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_ENABLE_SSL}" && -n "${VAL_DROPLET_NAME}" ]]; then
-    send_yaml_filter ".ssl.enabled = true"
+    send_yaml_filter ".ssl.enabled=true"
   fi
 }
 
@@ -1158,7 +1158,7 @@ function disable_ssl () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_DISABLE_SSL}" && -n "${VAL_DROPLET_NAME}" ]]; then
-    send_yaml_filter ".ssl.enabled = false"
+    send_yaml_filter ".ssl.enabled=false"
   fi
 }
 
@@ -1166,7 +1166,7 @@ function set_ssl_domain () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_DOMAIN_NAME}" && -n "${VAL_DROPLET_NAME}" ]]; then
-    send_yaml_filter ".ssl.domain = \\\"${OPT_DOMAIN_NAME}\\\""
+    send_yaml_filter ".ssl.domain=\\\"${OPT_DOMAIN_NAME}\\\""
   fi
 }
 
