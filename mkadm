@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.2.0"
+readonly VERSION="2.2.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -396,67 +396,66 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-      --help                     Show this help
-      --debug                    Enable debugging mode
-      --verbose                  Enable verbose output
-      --version                  Display program version info
-  -n, --name                     Set the name of the instance
-  -e, --email                    Set the email address of the admin account
-      --wiki-name                Set wiki name
-      --wiki-domain              Set wiki domain
-      --wiki-resources           Set path of wiki resources
-      --company-name             Set company name
-      --company-domain           Set company domain
-  -V, --package-version          Set version in package.json
-      --enable-wiki-ssl          Enable wiki config SSL
-      --enable-db-ssl            Enable database config SSL
-  -p, --pgadm-path               Specify the path of the pgadm program
-      --install-path             Specify the installation path of Miki on the instance
-  -i, --install-remotely         Flag to perform remote installation
-  -K, --remove-self-ssh-key      Remove the SSH key of the host from the allowed SSH keys
-  -k, --ssh-keys                 Comma-separated list of allowed SSH keys on the instance
-      --droplet-name             Set the name of droplet to manage
-      --database-name            Set the name of the database
-      --database-user            Set the name of the database user
-      --database-init            Specify the path to the database dump to import on the instance
-      --no-database-init         Do not initialize the instance with a database dump
-      --firewall-name            Set the name of firewall for this droplet
-  -A, --firewall-addresses       Comma-separated list of IP addresses to allow on the droplet
-  -P, --firewall-ports           Comma-separated list of allowed ports on the droplet
-  -f, --create-firewall          Create a firewall based from the instance name
-  -H, --host                     Override the name of the remote host
-  -Y, --yaml-filter              Send an updating YAML filter to the instance
-  -y, --query-filter             Send a query YAML filter to the instance
-      --enable-ssl               Enable SSL on the remote instance
-      --disable-ssl              Disable SSL on the remote instance
-      --domain-name              Set the domain name of the remote instance
-  -l, --list-instances           List all instances
-  -s, --ssh                      Connect to the instance via SSH
-  -c, --command                  Run an arbitrary command to the instance
-  -S, --sql                      Connect to the SQL prompt of the instance
-  -F  --sql-file                 Specify the SQL file to upload to the instance
-  -x, --expunge-instance         Expunge the instance
-  -X, --force-expunge-instance   Expunge the instance without confirmations
-  -r, --reset-admin-password     Reset the admin password of the instance
-  -t, --create-support-account   Create a support account on the instance
-      --power-on                 Turn on the droplet
-      --power-off                Turn off the droplet
-      --restore-database         Import a database dump into the instance
-      --dump-database            Export the database dump from the instance
-      --restart-miki             Restart the Miki service
-      --restart-machine          Restart the remote machine
-  -O, --origin-path              Specify the origin path when copying files
-  -D, --destination-path         Specify the destination path when copying files
-  -C, --check-name               Return true if an instance already exits
-  -G, --garbage-collect          Delete leftover files and directories
-  -N, --new-name                 The new name for the instance
-      --subscription-id, --sid   The Chargify subscription ID
-  -d, --delete-auth0-user        Delete the Auth0 user specified by -n
-  -R, --replace-instance         Replace an instance
-      --replace-tarball          Specify the tarball for the instance replace
-  -T, --snapshot-instance        Create a tarball snapshot of an instance
-      --snapshot-tarball         Specify the tarball for the instance snapshot
-  -U, --use-cache                Use a prebuilt droplet for the instance
+      --help                      Show this help
+      --debug                     Enable debugging mode
+      --verbose                   Enable verbose output
+      --version                   Display program version info
+  -n, --name <TEXT>               The name of the instance
+  -e, --email <EMAIL>             The email address of the admin account
+      --wiki-name <TEXT>          The wiki name
+      --wiki-domain <FQDN>        The wiki domain
+      --wiki-resources <PATH>     The remote path for wiki resources
+      --company-name <TEXT>       The company name
+      --company-domain <FQDN>     The company domain
+  -V, --package-version <SEMVER>  The version number for package.json
+      --enable-wiki-ssl           Flag to enable wiki SSL
+      --enable-db-ssl             Flag to enable database SSL
+  -p, --pgadm-path <PATH>         The local path of the pgadm program
+      --install-path <PATH>       The remote path of Miki on the instance
+  -i, --install-remotely          Flag to perform remote installation
+  -K, --remove-self-ssh-key       Remove the SSH key of the host from the allowed SSH keys
+  -k, --ssh-keys <CSV>            Comma-separated list of allowed SSH keys on the instance
+      --droplet-name <TEXT>       The name of droplet to manage
+      --database-name <TEXT>      The name of the database
+      --database-user <TEXT>      The name of the database user
+      --database-init <PATH>      The local path to the database dump to import on the instance
+      --no-database-init          Flag to not initialize the instance with a database dump
+      --firewall-name <TEXT>      The name of firewall for the droplet
+  -A, --firewall-addresses <IP>   Comma-separated list of IP addresses to allow on the droplet
+  -P, --firewall-ports <CSV>      Comma-separated list of allowed ports on the droplet
+  -f, --create-firewall           Flag to create a firewall from the instance name
+  -H, --host <TEXT>               Set to override the name of the remote host
+  -Y, --yaml-filter <JQ>          Send an updating YAML filter to the instance
+  -y, --query-filter <JQ>         Send a query YAML filter to the instance
+      --enable-ssl                Flag to enable SSL on the remote instance
+      --disable-ssl               Flag to Disable SSL on the remote instance
+      --domain-name <FQDN>        Set the domain name of the remote instance
+  -l, --list-instances            Flag to list all instances
+  -s, --ssh                       Flag to connect to the instance via SSH
+  -c, --command <COMMAND>         Run an arbitrary command to the instance
+  -S, --sql                       Flag to connect to the SQL prompt of the instance
+  -F  --sql-file <PATH>           The local SQL file to upload and execute on the instance
+  -x, --expunge-instance          Flag to expunge the instance
+  -X, --force-expunge-instance    Flag to expunge the instance without confirmations
+  -r, --reset-admin-password      Flag to reset the admin password of the instance
+  -t, --create-support-account    Flag to create a support account on the instance
+      --power-on                  Flag to turn on the instance
+      --power-off                 Flag to turn off the instance
+      --restore-database <PATH>   The local path for the database file for restoration
+      --dump-database <PATH>      The local path for the database file for dumping
+      --restart-miki              Flag to restart the Miki service
+      --restart-machine           Flag to restart the remote machine
+  -O, --origin-path <PATH>        The local origin path for file copying
+  -D, --destination-path <PATH>   The remote destination path for file copying
+  -C, --check-name                Flag to return true if an instance already exits
+  -G, --garbage-collect           Flag to delete leftover files and directories
+  -N, --new-name <TEXT>           The new name for the instance
+      --subscription-id <ID>      The Chargify subscription ID
+  -R, --replace-instance          Flag to replace an instance with a snapshot
+      --replace-tarball <PATH>    The local tarball path for the instance replacement
+  -T, --snapshot-instance         Flag to create a tarball snapshot of an instance
+      --snapshot-tarball <PATH>   The local tarball path for the instance snapshot
+  -U, --use-cache                 Flag to use a prebuilt droplet for the instance
 EOF
   exit 0
 }
