@@ -170,7 +170,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:dRTU --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:dRTU --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -202,7 +202,7 @@ function parse_arguments () {
       (--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
       (--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
       (--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
-      (--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
+      (-I|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
       (--no-database-init) OPT_DATABASE_INIT= ; shift ;;
       (--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
@@ -407,7 +407,7 @@ OPTIONS:
       --wiki-resources <PATH>     The remote path for wiki resources
       --company-name <TEXT>       The company name
       --company-domain <FQDN>     The company domain
-  -V, --package-version <SEMVER>  The version number for package.json
+      --package-version <SEMVER>  The version number for package.json
       --enable-wiki-ssl           Flag to enable wiki SSL
       --enable-db-ssl             Flag to enable database SSL
   -p, --pgadm-path <PATH>         The local path of the pgadm program
@@ -418,7 +418,7 @@ OPTIONS:
       --droplet-name <TEXT>       The name of the droplet
       --database-name <TEXT>      The name of the database
       --database-user <TEXT>      The name of the database user
-      --database-init <PATH>      The local path to the database dump to import on the instance
+  -I, --database-init <PATH>      The local path to the database dump to import on the instance
       --no-database-init          Flag to not initialize the instance with a database dump
       --firewall-name <TEXT>      The name of firewall for the droplet
   -A, --firewall-addresses <IP>   Comma-separated list of IP addresses to allow on the droplet
