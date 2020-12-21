@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.2.3"
+readonly VERSION="2.3.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -108,6 +108,7 @@ OPT_REPLACE_TARBALL="${SELF_DIR}/dat/${OPT_REPLACE_TARBALL_BASE}"
 OPT_SNAPSHOT_INSTANCE=
 OPT_SNAPSHOT_TARBALL=
 OPT_USE_CACHE=
+OPT_DOMAIN=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -236,12 +237,13 @@ function parse_arguments () {
       (-N|--new-name) OPT_NEW_NAME=$2; shift ;;
       (--subscription-id) OPT_SUBSCRIPTION_ID=$2; shift ;;
       (--data) OPT_DATA=$2; shift ;;
-      (-d|--delete-auth0-user) OPT_DELETE_AUTH0_USER=true; shift ;;
+      (--delete-auth0-user) OPT_DELETE_AUTH0_USER=true; shift ;;
       (-R|--replace-instance) OPT_REPLACE_INSTANCE=true; shift ;;
       (--replace-tarball) OPT_REPLACE_TARBALL=$2; shift 2 ;;
       (-T|--snapshot-instance) OPT_SNAPSHOT_INSTANCE=true; shift ;;
       (--snapshot-tarball) OPT_SNAPSHOT_TARBALL=$2; shift 2 ;;
       (-U|--use-cache) OPT_USE_CACHE=true; shift ;;
+      (-d|--domain) OPT_DOMAIN=$2; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -1095,6 +1097,15 @@ EOF
        -d "${json}"
 }
 
+function create_domain () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
+  local domain="${OPT_DOMAIN:-${OPT_NAME}}"
+
+  doadm -cDn "${VAL_DEFAULT_DOMAIN}" -s "${domain}" -A "${address}"
+}
+
 function remote_install () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1127,6 +1138,9 @@ function remote_install () {
     notify_chargify
     notify_auth0
     notify_hook
+
+    create_domain
+
     display_greeting
 
     delete_miki_directory
