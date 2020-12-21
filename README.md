@@ -44,40 +44,31 @@ To create an instance with the following configuration,
 - email: `david@mimix.io`
 - domain: `goliath.streamsharing.io`
 - droplet name: `miki-goliath`
-- firewall name: `miki-goliath-fw`
-- allowed ip addresses:
-  - self address (control center)
-  - `73.6.24.189`
-- allowed ports:
-  - `22`
-  - `80`
-  - `443`
+
+run:
+
+    mkadm -n goliath -e david@mimix.io
+
+To do the same, but with the following firewall configuration:
+
+- allowed ip addresses: self (control conter), `73.6.24.189`
+- allowed ports: `22` , `80`, `443`
 
 run:
 
     mkadm -n goliath -e david@mimix.io -fA 73.6.24.189.144
 
-When the installation has finished, you’ll see a message containing the IP address of the instance. Use this IP address as the DNS A record for `goliath.streamsharing.io` using your domain registrar.
-
-To do the same, but initialize the database with a PostgreSQL dump, run:
-
-    mkadm -n goliath -e david@mimix.io -d ~/miki/dat/mimix-miki.pg
-
-To do the same, but without database initialization, run:
-
-    mkadm -n goliath -e david@mimx.io
-
 To connect to goliath via SSH, run:
 
-    mkadm -sn goliath
+    mkadm -n goliath -s
 
 To connect to the SQL command line on goliath, run:
 
-    mkadm -Sn goliath
+    mkadm -n goliath -S
 
 To load an SQL file, run:
 
-    mkdam -n goliath -S file.sql
+    mkdam -n goliath -F file.sql
 
 To list the contents of the `/tmp` directory on goliath, run:
 
@@ -85,13 +76,13 @@ To list the contents of the `/tmp` directory on goliath, run:
 
 To expunge goliath, run:
 
-    mkadm -xn goliath
+    mkadm -n goliath -x
 
-To create a database dump from goliath, run:
+To extract the database from goliath, run:
 
     mkadm -n goliath --dump-database file.pg.xz
 
-To upload a database dump to goliath, run:
+To upload a database to goliath, run:
 
     mkadm -n goliath --restore-database file.pg.xz
 
