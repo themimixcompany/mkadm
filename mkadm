@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.3.0"
+readonly VERSION="2.3.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -55,12 +55,12 @@ OPT_WIKI_DOMAIN=
 OPT_WIKI_RESOURCES="/_assets/svg"
 OPT_COMPANY_NAME="${VAL_BASE_NAME}"
 OPT_COMPANY_DOMAIN="mimix.io"
-OPT_PACKAGE_VERSION=
 OPT_ENABLE_WIKI_SSL="false"
 OPT_ENABLE_DB_SSL="false"
+OPT_PACKAGE_VERSION=
+OPT_INSTALL_PATH="/var/miki"
 OPT_PGADM_PATH="$(which pgadm)"
 OPT_PGSQL_PATH="$(which pgsql)"
-OPT_INSTALL_PATH="/var/miki"
 OPT_INSTALL_REMOTELY=
 OPT_REMOVE_SELF_SSH_KEY=
 OPT_SSH_KEYS=
@@ -171,7 +171,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:dRTU --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,package-version:,enable-wiki-ssl,enable-db-ssl,pgadm-path:,install-path:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:dRTU --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -192,9 +192,9 @@ function parse_arguments () {
       (--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
       (--company-name) OPT_COMPANY_NAME=$2; shift 2 ;;
       (--company-domain) OPT_COMPANY_DOMAIN=$2; shift 2 ;;
-      (--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
       (--enable-wiki-ssl) OPT_ENABLE_WIKI_SSL=true; shift ;;
       (--enable-db-ssl) OPT_ENABLE_DB_SSL=true; shift ;;
+      (--package-version) OPT_PACKAGE_VERSION=$2; shift 2 ;;
       (-p|--pgadm-path) OPT_PGADM_PATH=$2; shift 2 ;;
       (--install-path) OPT_MAKE_TARBALL=true; OPT_INSTALL_PATH=$2; shift 2 ;;
       (-i|--install-remotely) OPT_MAKE_TARBALL=true; OPT_INSTALL_REMOTELY=true; shift ;;
@@ -209,7 +209,6 @@ function parse_arguments () {
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
       (-P|--firewall-ports) OPT_FIREWALL_PORTS=$2; shift 2 ;;
       (-f|--create-firewall) OPT_CREATE_FIREWALL=true; shift ;;
-      (-H|--host) OPT_HOST=$2; shift 2 ;;
       (-Y|--send-filter) OPT_SEND_FILTER=true; OPT_YAML_FILTER=$2; shift 2 ;;
       (-y|--query-filter) OPT_QUERY_FILTER=$2; shift 2 ;;
       (--enable-ssl) OPT_SEND_FILTER=true; OPT_ENABLE_SSL=true; shift ;;
@@ -409,11 +408,11 @@ OPTIONS:
       --wiki-resources <PATH>     The remote path for wiki resources
       --company-name <TEXT>       The company name
       --company-domain <FQDN>     The company domain
+      --enable-wiki-ssl           Flag to enable wiki SSL on installation
+      --enable-db-ssl             Flag to enable database SSL on installation
       --package-version <SEMVER>  The version number for package.json
-      --enable-wiki-ssl           Flag to enable wiki SSL
-      --enable-db-ssl             Flag to enable database SSL
-  -p, --pgadm-path <PATH>         The local path of the pgadm program
       --install-path <PATH>       The remote path of Miki on the instance
+  -p, --pgadm-path <PATH>         The local path of the pgadm program
   -i, --install-remotely          Flag to perform remote installation
   -K, --remove-self-ssh-key       Remove the SSH key of the host from the allowed SSH keys
   -k, --ssh-keys <CSV>            Comma-separated list of allowed SSH keys on the instance
@@ -423,10 +422,9 @@ OPTIONS:
   -I, --database-init <PATH>      The local path to the database dump to import on the instance
       --no-database-init          Flag to not initialize the instance with a database dump
       --firewall-name <TEXT>      The name of firewall for the droplet
-  -A, --firewall-addresses <IP>   Comma-separated list of IP addresses to allow on the droplet
+  -A, --firewall-addresses <CSV>  Comma-separated list of IP addresses to allow on the droplet
   -P, --firewall-ports <CSV>      Comma-separated list of allowed ports on the droplet
   -f, --create-firewall           Flag to create a firewall from the instance name
-  -H, --host <TEXT>               Set to override the name of the remote host
   -Y, --yaml-filter <JQ>          Send an updating YAML filter to the instance
   -y, --query-filter <JQ>         Send a query YAML filter to the instance
       --enable-ssl                Flag to enable SSL on the instance
