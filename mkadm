@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.3.1"
+readonly VERSION="2.4.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -171,7 +171,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:dRTU --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:RTUd: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -265,6 +265,12 @@ function get_droplet_address () {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -Ld | awk "/[0-9]+\s+${1}\s+/" | awk '{print $3}'
+}
+
+function list_domains () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  doadm -lDn "${VAL_DEFAULT_DOMAIN}" | awk '{print $3}'
 }
 
 function make_miki_www_name () {
@@ -807,7 +813,7 @@ function create_droplet () {
   fi
 }
 
-function droplet_ready_p () {
+function is_droplet_ready () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${VAL_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
@@ -825,7 +831,7 @@ function upload_tarball () {
 
   sleep "${VAL_SLEEP}"
 
-  if [[ -f "${file}" && -n "${OPT_INSTALL_PATH}" && -n "${OPT_DROPLET_USER}" ]] && droplet_ready_p; then
+  if [[ -f "${file}" && -n "${OPT_INSTALL_PATH}" && -n "${OPT_DROPLET_USER}" ]] && is_droplet_ready; then
     run_scp "${file}" "${OPT_DROPLET_USER}@${address}:"
   fi
 }
@@ -854,7 +860,7 @@ function upload_pgadm () {
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
 
-  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && is_droplet_ready; then
     run_scp "${OPT_PGADM_PATH}" "${OPT_DROPLET_USER}@${address}:${VAL_REMOTE_BIN}"
   fi
 }
@@ -864,7 +870,7 @@ function upload_pgsql () {
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
 
-  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && is_droplet_ready; then
     run_scp "${OPT_PGSQL_PATH}" "${OPT_DROPLET_USER}@${address}:${VAL_REMOTE_BIN}"
   fi
 }
@@ -883,13 +889,13 @@ function install_miki () {
     base_cmd="tar -C /var -xf ${file}; bash ${OPT_INSTALL_PATH}/bin/install -i ${OPT_INSTALL_PATH}"
   fi
 
-  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p && [[ -n "${OPT_DATABASE_INIT}" ]]; then
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && is_droplet_ready && [[ -n "${OPT_DATABASE_INIT}" ]]; then
     cmd="${base_cmd} -I ${VAL_REMOTE_TMP}/$(basename ${OPT_DATABASE_INIT})"
   else
     cmd="${base_cmd}"
   fi
 
-  if [[ -n "${OPT_INSTALL_PATH}" ]] && droplet_ready_p; then
+  if [[ -n "${OPT_INSTALL_PATH}" ]] && is_droplet_ready; then
     run_ssh "${OPT_DROPLET_USER}@${address}" "${cmd}"
   fi
 
@@ -918,7 +924,7 @@ function display_greeting () {
   echo "================================================================================"
 }
 
-function local_install_p () {
+function is_local_install () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -z "${OPT_INSTALL_REMOTELY}" ]]; then
@@ -1095,12 +1101,53 @@ EOF
        -d "${json}"
 }
 
+function is_domain_available () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local domain="${1}"
+
+  if [[ -z $(list_domains | grep "^${domain}$") ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function find_available_domain () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local query="${1}"
+
+  if is_domain_available "${query}"; then
+    echo -n "${query}"
+  else
+    for ((i = 2; i <= 1000; i++)); do
+      if is_domain_available "${query}${i}"; then
+        echo -n "${query}${i}"
+        break
+      fi
+    done
+  fi
+}
+
 function create_domain () {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
-  local domain="${OPT_DOMAIN:-${OPT_NAME}}"
 
+  #local domain="${OPT_DOMAIN:-${OPT_NAME}}"
+  local domain=
+
+  if [[ -n "${OPT_DOMAIN}" ]]; then
+    domain="$(find_available_domain ${OPT_DOMAIN,,})"
+  elif [[ -n "${OPT_NAME}" ]]; then
+    domain="$(find_available_domain ${OPT_NAME,,})"
+  else
+    warn "WARNING: Unable to create domain. Skipping."
+  fi
+
+  echo ""
+  echo "\${domain}: ${domain}"
   doadm -cDn "${VAL_DEFAULT_DOMAIN}" -s "${domain}" -A "${address}"
 }
 
@@ -1532,6 +1579,7 @@ function garbage_collect () {
   rm -rf /tmp/yarn--*
   rm -rf /tmp/mkadm.*.log
   rm -rf /tmp/core-js-banners
+  #rm -rf /tmp/v8-compile-cache*
 
   exit 0
 }

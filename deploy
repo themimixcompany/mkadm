@@ -104,12 +104,13 @@ function run () {
 
   local logfile=
 
-  if [[ $# -ge 3 ]]; then
-    logfile="/tmp/mkadm.${3}.log"
+  if [[ $# -eq 4 ]]; then
+    logfile="/tmp/mkadm.${4}.log"
 
     [[ -f "${logfile}" ]] && rm -f "${logfile}"
 
-    screen -L -Logfile "${logfile}" -dmS "deploy.${3}" mkadm -Un "${1}" -e "${2}" --subscription-id "${3}"
+    screen -L -Logfile "${logfile}" -dmS "deploy.${4}" \
+           mkadm -Un "${1}" -e "${2}" -d "${3}" --subscription-id "${4}"
   else
     display_usage
   fi
