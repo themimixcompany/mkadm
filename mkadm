@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.4.6"
+readonly VERSION="2.5.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -184,7 +184,7 @@ function parse_arguments () {
       (--debug) OPT_DEBUG=true; shift ;;
       (--verbose) OPT_VERBOSE=true; shift ;;
       (--version) OPT_VERSION=true; shift ;;
-      (-n|--name) OPT_NAME=$2; shift 2 ;;
+      (-n|--name) OPT_NAME="${2,,}"; shift 2 ;;
       (-e|--email) OPT_EMAIL=$2; OPT_INSTALL_REMOTELY=true; shift 2 ;;
       (--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
@@ -281,10 +281,16 @@ function make_miki_fw_name () {
 function set_domain_name () {
   debug "${FUNCNAME[0]}" "$@"
 
+  local subdomain=
+
   if [[ -n "${OPT_WIKI_DOMAIN}" ]]; then
     VAL_DOMAIN_NAME="${OPT_WIKI_DOMAIN}"
+  elif [[ -n "${OPT_SUBDOMAIN}" ]]; then
+    subdomain="$(find_available_domain ${OPT_SUBDOMAIN,,})"
+    VAL_DOMAIN_NAME="${subdomain}.${OPT_DOMAIN}"
   elif [[ -n "${OPT_NAME}" ]]; then
-    VAL_DOMAIN_NAME="${OPT_NAME,,}.${OPT_DOMAIN}"
+    subdomain="$(find_available_domain ${OPT_NAME,,})"
+    VAL_DOMAIN_NAME="${subdomain}.${OPT_DOMAIN}"
   else
     VAL_DOMAIN_NAME="${VAL_MIKI_DOMAIN}"
   fi
