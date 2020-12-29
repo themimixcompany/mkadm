@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.4.2"
+readonly VERSION="2.4.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -21,7 +21,6 @@ readonly VAL_BASE_COMMIT="2.5.159"
 readonly VAL_DEFAULT_PACKAGE_VERSION="1.0.0"
 readonly VAL_MIKI_DOMAIN="${VAL_BASE_NAME}.mimix.io"
 readonly VAL_RESOURCES_DIR="${SELF_DIR}/resources"
-readonly VAL_DEFAULT_DOMAIN="streamsharing.io"
 readonly VAL_REMOTE_BIN="/usr/local/bin"
 readonly VAL_REMOTE_TMP="/tmp"
 readonly VAL_MIKI_REPOSITORY="https://github.com/themimixcompany/wiki"
@@ -108,6 +107,7 @@ OPT_REPLACE_TARBALL="${SELF_DIR}/dat/${OPT_REPLACE_TARBALL_BASE}"
 OPT_SNAPSHOT_INSTANCE=
 OPT_SNAPSHOT_TARBALL=
 OPT_USE_CACHE=
+OPT_DOMAIN="streamsharing.io"
 OPT_SUBDOMAIN=
 
 function error () {
@@ -171,7 +171,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtCGN:RTUd: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,subdomain: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtCGN:RTUd:D: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -242,7 +242,8 @@ function parse_arguments () {
       (-T|--snapshot-instance) OPT_SNAPSHOT_INSTANCE=true; shift ;;
       (--snapshot-tarball) OPT_SNAPSHOT_TARBALL=$2; shift 2 ;;
       (-U|--use-cache) OPT_USE_CACHE=true; shift ;;
-      (-d|--subdomain) OPT_SUBDOMAIN=$2; shift ;;
+      (-d|--domain) OPT_DOMAIN=$2; shift ;;
+      (-D|--subdomain) OPT_SUBDOMAIN=$2; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -267,12 +268,6 @@ function get_droplet_address () {
   doadm -Ld | awk "/[0-9]+\s+${1}\s+/" | awk '{print $3}'
 }
 
-function list_domains () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  doadm -lDn "${VAL_DEFAULT_DOMAIN}" | awk '{print $3}'
-}
-
 function make_miki_www_name () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -291,7 +286,7 @@ function set_domain_name () {
   if [[ -n "${OPT_WIKI_DOMAIN}" ]]; then
     VAL_DOMAIN_NAME="${OPT_WIKI_DOMAIN}"
   elif [[ -n "${OPT_NAME}" ]]; then
-    VAL_DOMAIN_NAME="${OPT_NAME,,}.${VAL_DEFAULT_DOMAIN}"
+    VAL_DOMAIN_NAME="${OPT_NAME,,}.${OPT_DOMAIN}"
   else
     VAL_DOMAIN_NAME="${VAL_MIKI_DOMAIN}"
   fi
@@ -1104,6 +1099,12 @@ EOF
        -d "${json}"
 }
 
+function list_domains () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  doadm -lDn "${OPT_DOMAIN}" | awk '{print $3}'
+}
+
 function is_domain_available () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1137,8 +1138,6 @@ function create_domain () {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
-
-  #local domain="${OPT_SUBDOMAIN:-${OPT_NAME}}"
   local subdomain=
 
   if [[ -n "${OPT_SUBDOMAIN}" ]]; then
@@ -1146,10 +1145,14 @@ function create_domain () {
   elif [[ -n "${OPT_NAME}" ]]; then
     subdomain="$(find_available_domain ${OPT_NAME,,})"
   else
-    warn "WARNING: Unable to create domain. Skipping."
+    subdomain=""
   fi
 
-  doadm -cDn "${VAL_DEFAULT_DOMAIN}" -s "${subdomain}" -A "${address}"
+  if [[ -n "${subdomain}" ]]; then
+    doadm -cDn "${OPT_DOMAIN}" -s "${subdomain}" -A "${address}"
+  else
+    warn "WARNING: Unable to create domain. Skipping."
+  fi
 }
 
 function remote_install () {
