@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.4.0"
+readonly VERSION="2.4.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -108,7 +108,7 @@ OPT_REPLACE_TARBALL="${SELF_DIR}/dat/${OPT_REPLACE_TARBALL_BASE}"
 OPT_SNAPSHOT_INSTANCE=
 OPT_SNAPSHOT_TARBALL=
 OPT_USE_CACHE=
-OPT_DOMAIN=
+OPT_SUBDOMAIN=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -171,7 +171,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:RTUd: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:RTUd: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,subdomain: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -242,7 +242,7 @@ function parse_arguments () {
       (-T|--snapshot-instance) OPT_SNAPSHOT_INSTANCE=true; shift ;;
       (--snapshot-tarball) OPT_SNAPSHOT_TARBALL=$2; shift 2 ;;
       (-U|--use-cache) OPT_USE_CACHE=true; shift ;;
-      (-d|--domain) OPT_DOMAIN=$2; shift ;;
+      (-d|--subdomain) OPT_SUBDOMAIN=$2; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -1095,6 +1095,9 @@ function notify_hook () {
 EOF
 )
 
+  echo ""
+  echo "\${OPT_SUBSCRIPTION_ID}: ${OPT_SUBSCRIPTION_ID}"
+
   curl "${VAL_HOOK_URL}/control" \
        -s -X POST \
        -H "Content-Type: application/json" \
@@ -1121,7 +1124,7 @@ function find_available_domain () {
   if is_domain_available "${query}"; then
     echo -n "${query}"
   else
-    for ((i = 2; i <= 1000; i++)); do
+    for ((i = 1; i <= 1000; i++)); do
       if is_domain_available "${query}${i}"; then
         echo -n "${query}${i}"
         break
@@ -1135,20 +1138,18 @@ function create_domain () {
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
 
-  #local domain="${OPT_DOMAIN:-${OPT_NAME}}"
-  local domain=
+  #local domain="${OPT_SUBDOMAIN:-${OPT_NAME}}"
+  local subdomain=
 
-  if [[ -n "${OPT_DOMAIN}" ]]; then
-    domain="$(find_available_domain ${OPT_DOMAIN,,})"
+  if [[ -n "${OPT_SUBDOMAIN}" ]]; then
+    subdomain="$(find_available_domain ${OPT_SUBDOMAIN,,})"
   elif [[ -n "${OPT_NAME}" ]]; then
-    domain="$(find_available_domain ${OPT_NAME,,})"
+    subdomain="$(find_available_domain ${OPT_NAME,,})"
   else
     warn "WARNING: Unable to create domain. Skipping."
   fi
 
-  echo ""
-  echo "\${domain}: ${domain}"
-  doadm -cDn "${VAL_DEFAULT_DOMAIN}" -s "${domain}" -A "${address}"
+  doadm -cDn "${VAL_DEFAULT_DOMAIN}" -s "${subdomain}" -A "${address}"
 }
 
 function remote_install () {
