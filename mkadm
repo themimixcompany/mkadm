@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.4.5"
+readonly VERSION="2.4.6"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1074,9 +1074,6 @@ function delete_auth0_user () {
 
 function notify_hook () {
   debug "${FUNCNAME[0]}" "$@"
-
-  echo ""
-  echo "\${OPT_SUBSCRIPTION_ID}: ${OPT_SUBSCRIPTION_ID}"
 
   local json=$(jq . << EOF
 {
