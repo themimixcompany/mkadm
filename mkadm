@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.4.3"
+readonly VERSION="2.4.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -99,7 +99,6 @@ OPT_CHECK_NAME=
 OPT_GARBAGE_COLLECT=
 OPT_NEW_NAME=
 OPT_SUBSCRIPTION_ID=
-OPT_DATA=
 OPT_DELETE_AUTH0_USER=
 OPT_REPLACE_INSTANCE=
 OPT_REPLACE_TARBALL_BASE="miki-base.tar.xz"
@@ -171,7 +170,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtCGN:RTUd:D: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUd:D: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -203,7 +202,7 @@ function parse_arguments () {
       (--droplet-name) OPT_DROPLET_NAME=$2; shift 2 ;;
       (--database-name) OPT_DATABASE_NAME=$2; shift 2 ;;
       (--database-user) OPT_DATABASE_USER=$2; shift 2 ;;
-      (-I|--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
+      (--database-init) OPT_DATABASE_INIT=$2; shift 2 ;;
       (--no-database-init) OPT_DATABASE_INIT= ; shift ;;
       (--firewall-name) OPT_FIREWALL_NAME=$2; shift 2 ;;
       (-A|--firewall-addresses) OPT_FIREWALL_ADDRESSES=$2; shift 2 ;;
@@ -234,8 +233,7 @@ function parse_arguments () {
       (-C|--check-name) OPT_CHECK_NAME=true; shift ;;
       (-G|--garbage-collect) OPT_GARBAGE_COLLECT=true; shift ;;
       (-N|--new-name) OPT_NEW_NAME=$2; shift ;;
-      (--subscription-id) OPT_SUBSCRIPTION_ID=$2; shift ;;
-      (--data) OPT_DATA=$2; shift ;;
+      (-I|--subscription-id) OPT_SUBSCRIPTION_ID=$2; shift 2 ;;
       (--delete-auth0-user) OPT_DELETE_AUTH0_USER=true; shift ;;
       (-R|--replace-instance) OPT_REPLACE_INSTANCE=true; shift ;;
       (--replace-tarball) OPT_REPLACE_TARBALL=$2; shift 2 ;;
@@ -420,7 +418,7 @@ OPTIONS:
       --droplet-name <TEXT>       The name of the droplet
       --database-name <TEXT>      The name of the database
       --database-user <TEXT>      The name of the database user
-  -I, --database-init <PATH>      The local path to the database dump to import on the instance
+      --database-init <PATH>      The local path to the database dump to import on the instance
       --no-database-init          Flag to not initialize the instance with a database dump
       --firewall-name <TEXT>      The name of firewall for the droplet
   -A, --firewall-addresses <CSV>  Comma-separated list of IP addresses to allow on the droplet
@@ -1077,6 +1075,9 @@ function delete_auth0_user () {
 function notify_hook () {
   debug "${FUNCNAME[0]}" "$@"
 
+  echo ""
+  echo "\${OPT_SUBSCRIPTION_ID}: ${OPT_SUBSCRIPTION_ID}"
+
   local json=$(jq . << EOF
 {
   "data": {
@@ -1089,9 +1090,6 @@ function notify_hook () {
 }
 EOF
 )
-
-  echo ""
-  echo "\${OPT_SUBSCRIPTION_ID}: ${OPT_SUBSCRIPTION_ID}"
 
   curl "${VAL_HOOK_URL}/control" \
        -s -X POST \
@@ -1187,11 +1185,9 @@ function remote_install () {
     notify_chargify
     notify_auth0
     notify_hook
-
     create_domain
 
     display_greeting
-
     delete_miki_directory
   fi
 }
