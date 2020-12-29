@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.4.1"
+readonly VERSION="2.4.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -77,9 +77,9 @@ OPT_CREATE_FIREWALL=
 OPT_SEND_FILTER=
 OPT_YAML_FILTER=
 OPT_QUERY_FILTER=
-OPT_ENABLE_SSL=
-OPT_DISABLE_SSL=
-OPT_DOMAIN_NAME=
+OPT_CONFIG_ENABLE_SSL=
+OPT_CONFIG_DISABLE_SSL=
+OPT_CONFIG_DOMAIN_NAME=
 OPT_SSH=
 OPT_COMMAND=
 OPT_SQL=
@@ -171,7 +171,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtO:D:CGN:RTUd: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,enable-ssl,disable-ssl,domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,subdomain: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:I:A:P:fH:Y:y:lsc:SF:xXrtCGN:RTUd: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,source-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,subdomain: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -211,9 +211,9 @@ function parse_arguments () {
       (-f|--create-firewall) OPT_CREATE_FIREWALL=true; shift ;;
       (-Y|--send-filter) OPT_SEND_FILTER=true; OPT_YAML_FILTER=$2; shift 2 ;;
       (-y|--query-filter) OPT_QUERY_FILTER=$2; shift 2 ;;
-      (--enable-ssl) OPT_SEND_FILTER=true; OPT_ENABLE_SSL=true; shift ;;
-      (--disable-ssl) OPT_SEND_FILTER=true; OPT_DISABLE_SSL=true; shift ;;
-      (--domain-name) OPT_SEND_FILTER=true; OPT_DOMAIN_NAME=$2; shift 2 ;;
+      (--config-enable-ssl) OPT_SEND_FILTER=true; OPT_CONFIG_ENABLE_SSL=true; shift ;;
+      (--config-disable-ssl) OPT_SEND_FILTER=true; OPT_CONFIG_DISABLE_SSL=true; shift ;;
+      (--config-domain-name) OPT_SEND_FILTER=true; OPT_CONFIG_DOMAIN_NAME=$2; shift 2 ;;
       (-l|--list-instances|--list) OPT_LIST_INSTANCES=true; shift ;;
       (-s|--ssh) OPT_SSH=true; shift ;;
       (-c|--command) OPT_COMMAND=$2; shift 2 ;;
@@ -229,8 +229,8 @@ function parse_arguments () {
       (--dump-database) OPT_DUMP_DATABASE=$2; shift 2 ;;
       (--restart-miki) OPT_RESTART_MIKI=true; shift ;;
       (--restart-machine) OPT_RESTART_MACHINE=true; shift ;;
-      (-O|--origin-path) OPT_ORIGIN_PATH=$2; shift 2 ;;
-      (-D|--destination-path) OPT_DESTINATION_PATH=$2; shift 2 ;;
+      (--origin-path) OPT_ORIGIN_PATH=$2; shift 2 ;;
+      (--destination-path) OPT_DESTINATION_PATH=$2; shift 2 ;;
       (-C|--check-name) OPT_CHECK_NAME=true; shift ;;
       (-G|--garbage-collect) OPT_GARBAGE_COLLECT=true; shift ;;
       (-N|--new-name) OPT_NEW_NAME=$2; shift ;;
@@ -433,9 +433,9 @@ OPTIONS:
   -f, --create-firewall           Flag to create a firewall from the instance name
   -Y, --yaml-filter <JQ>          Send an updating YAML filter to the instance
   -y, --query-filter <JQ>         Send a query YAML filter to the instance
-      --enable-ssl                Flag to enable SSL on the instance
-      --disable-ssl               Flag to Disable SSL on the instance
-      --domain-name <FQDN>        Set the domain name of the instance
+      --config-enable-ssl         Flag to enable SSL on the instance
+      --config-disable-ssl        Flag to Disable SSL on the instance
+      --config-domain-name <FQDN> Set the domain name of the instance
   -l, --list-instances            Flag to list all instances
   -s, --ssh                       Flag to connect to the instance via SSH
   -c, --command <COMMAND>         Run an arbitrary command to the instance
@@ -451,8 +451,8 @@ OPTIONS:
       --dump-database <PATH>      The local path for the database file for dumping
       --restart-miki              Flag to restart the Miki service
       --restart-machine           Flag to restart the remote machine
-  -O, --origin-path <PATH>        The local origin path for file copying
-  -D, --destination-path <PATH>   The remote destination path for file copying
+      --origin-path <PATH>        The local origin path for file copying
+      --destination-path <PATH>   The remote destination path for file copying
   -C, --check-name                Flag to return true if an instance already exits
   -G, --garbage-collect           Flag to delete leftover files and directories
   -N, --new-name <TEXT>           The new name for the instance
@@ -1208,7 +1208,7 @@ function send_yaml_filter () {
 function enable_ssl () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -n "${OPT_ENABLE_SSL}" && -n "${VAL_DROPLET_NAME}" ]]; then
+  if [[ -n "${OPT_CONFIG_ENABLE_SSL}" && -n "${VAL_DROPLET_NAME}" ]]; then
     send_yaml_filter ".ssl.enabled=true"
   fi
 }
@@ -1216,7 +1216,7 @@ function enable_ssl () {
 function disable_ssl () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -n "${OPT_DISABLE_SSL}" && -n "${VAL_DROPLET_NAME}" ]]; then
+  if [[ -n "${OPT_CONFIG_DISABLE_SSL}" && -n "${VAL_DROPLET_NAME}" ]]; then
     send_yaml_filter ".ssl.enabled=false"
   fi
 }
@@ -1224,8 +1224,8 @@ function disable_ssl () {
 function set_ssl_domain () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -n "${OPT_DOMAIN_NAME}" && -n "${VAL_DROPLET_NAME}" ]]; then
-    send_yaml_filter ".ssl.domain=\\\"${OPT_DOMAIN_NAME}\\\""
+  if [[ -n "${OPT_CONFIG_DOMAIN_NAME}" && -n "${VAL_DROPLET_NAME}" ]]; then
+    send_yaml_filter ".ssl.domain=\\\"${OPT_CONFIG_DOMAIN_NAME}\\\""
   fi
 }
 
@@ -1237,15 +1237,15 @@ function send_filter () {
       send_yaml_filter
     fi
 
-    if [[ -n "${OPT_ENABLE_SSL}" ]]; then
+    if [[ -n "${OPT_CONFIG_ENABLE_SSL}" ]]; then
       enable_ssl
     fi
 
-    if [[ -n "${OPT_DISABLE_SSL}" ]];then
+    if [[ -n "${OPT_CONFIG_DISABLE_SSL}" ]];then
       disable_ssl
     fi
 
-    if [[ -n "${OPT_DOMAIN_NAME}" ]]; then
+    if [[ -n "${OPT_CONFIG_DOMAIN_NAME}" ]]; then
       set_ssl_domain
     fi
   fi
