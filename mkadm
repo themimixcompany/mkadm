@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.4.4"
+readonly VERSION="2.4.5"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -232,7 +232,7 @@ function parse_arguments () {
       (--destination-path) OPT_DESTINATION_PATH=$2; shift 2 ;;
       (-C|--check-name) OPT_CHECK_NAME=true; shift ;;
       (-G|--garbage-collect) OPT_GARBAGE_COLLECT=true; shift ;;
-      (-N|--new-name) OPT_NEW_NAME=$2; shift ;;
+      (-N|--new-name) OPT_NEW_NAME=$2; shift 2 ;;
       (-I|--subscription-id) OPT_SUBSCRIPTION_ID=$2; shift 2 ;;
       (--delete-auth0-user) OPT_DELETE_AUTH0_USER=true; shift ;;
       (-R|--replace-instance) OPT_REPLACE_INSTANCE=true; shift ;;
@@ -240,8 +240,8 @@ function parse_arguments () {
       (-T|--snapshot-instance) OPT_SNAPSHOT_INSTANCE=true; shift ;;
       (--snapshot-tarball) OPT_SNAPSHOT_TARBALL=$2; shift 2 ;;
       (-U|--use-cache) OPT_USE_CACHE=true; shift ;;
-      (-d|--domain) OPT_DOMAIN=$2; shift ;;
-      (-D|--subdomain) OPT_SUBDOMAIN=$2; shift ;;
+      (-d|--domain) OPT_DOMAIN=$2; shift 2 ;;
+      (-D|--subdomain) OPT_SUBDOMAIN=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
