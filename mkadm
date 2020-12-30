@@ -1152,11 +1152,13 @@ function create_domain () {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
-  local metadata=$(get_chargify_metadata)
+  local metadata=$(get_chargify_metadata | tr '[:upper:]' '[:lower:]')
   local subdomain=
 
+  echo "** \${metadata}: ${metadata}"
+
   if [[ ! "${metadata}" == "null" && -n "${metadata}" ]]; then
-    subdomain="$(find_available_domain ${metadata})"
+    subdomain="$(find_available_domain ${metadata// /})"
   elif [[ -n "${OPT_SUBDOMAIN}" ]]; then
     subdomain="$(find_available_domain ${OPT_SUBDOMAIN,,})"
   elif [[ -n "${OPT_NAME}" ]]; then

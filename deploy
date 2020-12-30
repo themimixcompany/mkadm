@@ -104,7 +104,9 @@ function run () {
 
   if [[ $# -eq 4 ]]; then
     local name="${1// /}"
+    local email="${2}"
     local domain="${3// /}"
+    local id="${4}"
     local logfile="/tmp/mkadm.${id}.log"
 
     [[ -f "${logfile}" ]] && rm -f "${logfile}"
@@ -118,6 +120,8 @@ function run () {
 
 function main () {
   debug "${FUNCNAME[0]}" "$@"
+
+  echo "\${@}: ${@}"
 
   parse_arguments "$@"
   process_arguments "$@"
