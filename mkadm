@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.5.0"
+readonly VERSION="2.5.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -917,6 +917,7 @@ function display_greeting () {
   echo " Your new Miki instance is now ready."
   echo ""
   echo " Name: ${OPT_NAME}"
+  echo " URL: https://${VAL_DOMAIN_NAME}"
   echo " Address: ${OPT_DROPLET_ADDRESS}"
   echo " Username: ${OPT_EMAIL}"
   echo " Password: ${VAL_ADMIN_PASSWORD}"
