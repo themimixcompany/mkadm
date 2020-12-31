@@ -121,8 +121,6 @@ function run () {
 function main () {
   debug "${FUNCNAME[0]}" "$@"
 
-  echo "\${@}: ${@}"
-
   parse_arguments "$@"
   process_arguments "$@"
 

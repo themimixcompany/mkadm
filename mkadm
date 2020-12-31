@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.5.1"
+readonly VERSION="2.5.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -281,16 +281,16 @@ function make_miki_fw_name () {
 function set_domain_name () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local subdomain=
+  local metadata="$(get_chargify_metadata | tr '[:upper:]' '[:lower:]' | tr -d ' ')"
 
   if [[ -n "${OPT_WIKI_DOMAIN}" ]]; then
     VAL_DOMAIN_NAME="${OPT_WIKI_DOMAIN}"
+  elif [[ ! "${metadata}" == "null" && -n "${metadata}" ]]; then
+    VAL_DOMAIN_NAME="$(find_available_domain ${metadata,,}).${OPT_DOMAIN}"
   elif [[ -n "${OPT_SUBDOMAIN}" ]]; then
-    subdomain="$(find_available_domain ${OPT_SUBDOMAIN,,})"
-    VAL_DOMAIN_NAME="${subdomain}.${OPT_DOMAIN}"
+    VAL_DOMAIN_NAME="$(find_available_domain ${OPT_SUBDOMAIN,,}).${OPT_DOMAIN}"
   elif [[ -n "${OPT_NAME}" ]]; then
-    subdomain="$(find_available_domain ${OPT_NAME,,})"
-    VAL_DOMAIN_NAME="${subdomain}.${OPT_DOMAIN}"
+    VAL_DOMAIN_NAME="$(find_available_domain ${OPT_NAME,,}).${OPT_DOMAIN}"
   else
     VAL_DOMAIN_NAME="${VAL_MIKI_DOMAIN}"
   fi
@@ -1017,7 +1017,8 @@ function get_chargify_metadata () {
 
   if [[ -n "${OPT_SUBSCRIPTION_ID}" ]]; then
     curl "https://mimix.chargify.com/subscriptions/${OPT_SUBSCRIPTION_ID}/metadata.json" \
-         -s -X GET | jq -rM '.metadata | .[0] .value'
+         -s -X GET \
+         -u "${VAL_CHARGIFY_USERNAME}:X" | jq -r '.metadata | .[0] .value'
   fi
 }
 
@@ -1152,13 +1153,11 @@ function create_domain () {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
-  local metadata=$(get_chargify_metadata | tr '[:upper:]' '[:lower:]')
+  local metadata="$(get_chargify_metadata | tr '[:upper:]' '[:lower:]' | tr -d ' ')"
   local subdomain=
 
-  echo "** \${metadata}: ${metadata}"
-
   if [[ ! "${metadata}" == "null" && -n "${metadata}" ]]; then
-    subdomain="$(find_available_domain ${metadata// /})"
+    subdomain="$(find_available_domain ${metadata,,})"
   elif [[ -n "${OPT_SUBDOMAIN}" ]]; then
     subdomain="$(find_available_domain ${OPT_SUBDOMAIN,,})"
   elif [[ -n "${OPT_NAME}" ]]; then
