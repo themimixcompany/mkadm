@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.5.2"
+readonly VERSION="2.5.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -281,7 +281,7 @@ function make_miki_fw_name () {
 function set_domain_name () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local metadata="$(get_chargify_metadata | tr '[:upper:]' '[:lower:]' | tr -d ' ')"
+  local metadata="$(get_chargify_metadata)"
 
   if [[ -n "${OPT_WIKI_DOMAIN}" ]]; then
     VAL_DOMAIN_NAME="${OPT_WIKI_DOMAIN}"
@@ -1018,7 +1018,9 @@ function get_chargify_metadata () {
   if [[ -n "${OPT_SUBSCRIPTION_ID}" ]]; then
     curl "https://mimix.chargify.com/subscriptions/${OPT_SUBSCRIPTION_ID}/metadata.json" \
          -s -X GET \
-         -u "${VAL_CHARGIFY_USERNAME}:X" | jq -r '.metadata | .[0] .value'
+         -u "${VAL_CHARGIFY_USERNAME}:X" \
+      | jq -r '.metadata | .[0] .value' \
+      | tr '[:upper:]' '[:lower:]' | tr -d ' '
   fi
 }
 
@@ -1153,7 +1155,7 @@ function create_domain () {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
-  local metadata="$(get_chargify_metadata | tr '[:upper:]' '[:lower:]' | tr -d ' ')"
+  local metadata="$(get_chargify_metadata)"
   local subdomain=
 
   if [[ ! "${metadata}" == "null" && -n "${metadata}" ]]; then
