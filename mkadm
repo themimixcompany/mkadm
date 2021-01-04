@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.5.3"
+readonly VERSION="2.5.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -29,6 +29,7 @@ readonly VAL_HOOK_URL="http://hook"
 readonly VAL_CHARGIFY_USERNAME="jm6xz1asP3UlyizRoeC7UbeXsJ90x0wbY2bwOOg34"
 readonly VAL_SNAPSHOT_ID="74983549"
 readonly VAL_SEED_FILE="$HOME/miki-seed.tar"
+readonly VAL_JS_FILTER="${SELF_DIR}/filter.js"
 
 VAL_DOMAIN_NAME=
 VAL_DROPLET_NAME=
@@ -1012,15 +1013,23 @@ EOF
   fi
 }
 
+function filter_js () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  node "${VAL_JS_FILTER}" "$1"
+}
+
 function get_chargify_metadata () {
   debug "${FUNCNAME[0]}" "$@"
 
+  local val=
+
   if [[ -n "${OPT_SUBSCRIPTION_ID}" ]]; then
-    curl "https://mimix.chargify.com/subscriptions/${OPT_SUBSCRIPTION_ID}/metadata.json" \
-         -s -X GET \
-         -u "${VAL_CHARGIFY_USERNAME}:X" \
-      | jq -r '.metadata | .[0] .value' \
-      | tr '[:upper:]' '[:lower:]' | tr -d ' '
+    val=$(curl "https://mimix.chargify.com/subscriptions/${OPT_SUBSCRIPTION_ID}/metadata.json" \
+               -s -X GET \
+               -u "${VAL_CHARGIFY_USERNAME}:X" \
+            | jq -r '.metadata | .[0] .value')
+    filter_js "${val}"
   fi
 }
 
