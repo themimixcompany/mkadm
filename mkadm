@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.5.4"
+readonly VERSION="2.5.5"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -609,7 +609,7 @@ function update_files () {
     ['https://github\.com/Requarks/wiki']="${VAL_MIKI_REPOSITORY}"
 
     ['Requarks']="${OPT_COMPANY_NAME^}"
-    ['requarks\.io']="${OPT_COMPANY_DOMAIN}"
+    # ['requarks\.io']="${OPT_COMPANY_DOMAIN}"
     # ['requarks']="${OPT_COMPANY_NAME}"
   )
 
