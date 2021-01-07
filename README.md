@@ -72,7 +72,7 @@ To load an SQL file, run:
 
 To list the contents of the `/tmp` directory on goliath, run:
 
-    mkadm -n goliath -c "ls /tmp"
+    mkadm -n goliath -c 'ls /tmp'
 
 To expunge goliath, run:
 
