@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.5.6"
+readonly VERSION="2.5.7"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1016,7 +1016,13 @@ EOF
 function filter_js () {
   debug "${FUNCNAME[0]}" "$@"
 
-  node "${VAL_JS_FILTER}" "$1"
+  local value="$1"
+
+  if [[ -n "${value}" ]]; then
+    node "${VAL_JS_FILTER}" "$1"
+  else
+    echo ""
+  fi
 }
 
 function get_chargify_metadata () {
