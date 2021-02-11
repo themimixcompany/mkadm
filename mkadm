@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.5.7"
+readonly VERSION="2.7.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -30,6 +30,13 @@ readonly VAL_CHARGIFY_USERNAME="jm6xz1asP3UlyizRoeC7UbeXsJ90x0wbY2bwOOg34"
 readonly VAL_SNAPSHOT_ID="74983549"
 readonly VAL_SEED_FILE="$HOME/miki-seed.tar"
 readonly VAL_JS_FILTER="${SELF_DIR}/filter.js"
+
+readonly VAL_MODULES_LINUX_MIKI="${SELF_DIR}/dat/node_modules-linux-miki.tar.xz"
+readonly VAL_MODULES_LINUX_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-linux-miki-desktop.tar.xz"
+readonly VAL_MODULES_WINDOWS_MIKI="${SELF_DIR}/dat/node_modules-windows-miki.tar.xz"
+readonly VAL_MODULES_WINDOWS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-windows-miki-desktop.tar.xz"
+readonly VAL_MODULES_MACOS_MIKI="${SELF_DIR}/dat/node_modules-macos-miki.tar.xz"
+readonly VAL_MODULES_MACOS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-macos-miki-desktop.tar.xz"
 
 VAL_DOMAIN_NAME=
 VAL_DROPLET_NAME=
@@ -109,6 +116,7 @@ OPT_SNAPSHOT_TARBALL=
 OPT_USE_CACHE=
 OPT_DOMAIN="streamsharing.io"
 OPT_SUBDOMAIN=
+OPT_DESKTOP=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -171,7 +179,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUd:D: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUd:D: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -243,6 +251,7 @@ function parse_arguments () {
       (-U|--use-cache) OPT_USE_CACHE=true; shift ;;
       (-d|--domain) OPT_DOMAIN=$2; shift 2 ;;
       (-D|--subdomain) OPT_SUBDOMAIN=$2; shift 2 ;;
+      (--desktop) OPT_DESKTOP=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -462,6 +471,9 @@ OPTIONS:
   -T, --snapshot-instance         Flag to create a tarball snapshot of an instance
       --snapshot-tarball <PATH>   The local tarball path for the instance snapshot
   -U, --use-cache                 Flag to use a prebuilt droplet snapshot for the instance
+  -d, --domain                    The top-level domain to use for the subdomains
+  -D, --subdomain                 The subdomain to use on the top-level domain
+      --desktop <OS>              Create a desktop version for OS
 EOF
   exit 0
 }
@@ -959,6 +971,7 @@ function local_install () {
   create_db_directory
 
   create_tarball
+  create_desktop
 }
 
 function check_droplet () {
@@ -1662,6 +1675,80 @@ function snapshot_instance () {
   run_ssh "${OPT_DROPLET_USER}@${address}" "rm -rf /tmp/miki /tmp/miki.tar.xz"
 
   exit 0
+}
+
+function delete_modules () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  rm -rf app/miki/node_modules
+  rm -rf node_modules
+}
+
+function install_modules () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  if [[ -n "${OPT_DESKTOP}" ]]; then
+    case "${OPT_DESKTOP}" in
+      linux)
+        tar -C app/miki -xJf "${VAL_MODULES_LINUX_MIKI}"
+        tar -xf "${VAL_MODULES_LINUX_MIKI_DESKTOP}"
+      ;;
+      windows)
+        tar -C app/miki -xJf "${VAL_MODULES_WINDOWS_MIKI}"
+        tar -xf "${VAL_MODULES_WINDOWS_MIKI_DESKTOP}"
+        ;;
+      macos)
+        tar -C app/miki -xJf "${VAL_MODULES_MACOS_MIKI}"
+        tar -xf "${VAL_MODULES_MACOS_MIKI_DESKTOP}"
+        ;;
+      *)
+        error "ERROR: The specified platform does not exist. Aborting."
+        ;;
+    esac
+  fi
+}
+
+function is_valid_desktop () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  if [[ "${OPT_DESKTOP}" == "linux" && \
+        "${OPT_DESKTOP}" == "windows" && \
+        "${OPT_DESKTOP}" == "macos" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function package_desktop () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  case "${OPT_DESKTOP}" in
+    linux)
+      electron-packager . --platform=linux --out=out --icon=assets/icons/icon.icns --overwrite
+      ;;
+    windows)
+      electron-packager . --platform=win32 --out=out --icon=assets/icons/icon.icns --overwrite
+      ;;
+    macos)
+      electron-packager . --platform=darwin --out=out --icon=assets/icons/icon.icns --overwrite
+      ;;
+    *)
+      error "ERROR: The specified platform does not exist. Aborting."
+      ;;
+  esac
+}
+
+function create_desktop () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  if [[ -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
+    delete_modules
+    install_modules
+    package_desktop
+
+    exit 0
+  fi
 }
 
 function main () {
