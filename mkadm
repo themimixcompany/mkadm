@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.7.0"
+readonly VERSION="2.7.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -31,6 +31,7 @@ readonly VAL_SNAPSHOT_ID="74983549"
 readonly VAL_SEED_FILE="$HOME/miki-seed.tar"
 readonly VAL_JS_FILTER="${SELF_DIR}/filter.js"
 
+readonly VAL_MIKI_DESKTOP="${SELF_DIR}/dat/miki-desktop.tar.xz"
 readonly VAL_MODULES_LINUX_MIKI="${SELF_DIR}/dat/node_modules-linux-miki.tar.xz"
 readonly VAL_MODULES_LINUX_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-linux-miki-desktop.tar.xz"
 readonly VAL_MODULES_WINDOWS_MIKI="${SELF_DIR}/dat/node_modules-windows-miki.tar.xz"
@@ -763,6 +764,7 @@ function create_tarball () {
 
   local file="$(basename ${OPT_MIKI_DIRECTORY}).${VAL_RANDOM}.tar.gz"
 
+  is_valid_desktop && pop
   pop
 
   if [[ -d "${OPT_MIKI_DIRECTORY}" ]]; then
@@ -970,8 +972,8 @@ function local_install () {
   install_assets
   create_db_directory
 
-  create_tarball
   create_desktop
+  create_tarball
 }
 
 function check_droplet () {
@@ -1677,6 +1679,16 @@ function snapshot_instance () {
   exit 0
 }
 
+function extract_desktop () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local desktop_directory="$(mktemp -d)"
+
+  tar -C "${desktop_directory}" -xJf "${VAL_MIKI_DESKTOP}"
+  cp -a "${OPT_MIKI_DIRECTORY}" "${desktop_directory}/miki-desktop/app"
+  push "${desktop_directory}/miki-desktop"
+}
+
 function delete_modules () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1711,8 +1723,8 @@ function install_modules () {
 function is_valid_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ "${OPT_DESKTOP}" == "linux" && \
-        "${OPT_DESKTOP}" == "windows" && \
+  if [[ "${OPT_DESKTOP}" == "linux" || \
+        "${OPT_DESKTOP}" == "windows" || \
         "${OPT_DESKTOP}" == "macos" ]]; then
     return 0
   else
@@ -1743,6 +1755,7 @@ function create_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
+    extract_desktop
     delete_modules
     install_modules
     package_desktop
