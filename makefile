@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 .DELETE_ON_ERROR:
 .RECIPEPREFIX +=
 
-.PHONY: all build clean images
+.PHONY: all build clean images upload-dev
 
 DIR := $(shell basename "$(shell pwd)")
 NAME = mkcmd
@@ -36,3 +36,8 @@ images: clean
   mkadm -n base -e rom@mimix.io
   mkadm -Tn base --snapshot-tarball dat/miki-base.tar.xz
   mkadm -Xn base
+
+upload-dev:
+  rsync -avzP mkadm control:src/mkadm/mkadm-dev
+  ssh control chmod +x src/mkadm/mkadm-dev
+
