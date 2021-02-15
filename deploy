@@ -105,14 +105,14 @@ function run () {
   if [[ $# -eq 4 ]]; then
     local name="${1// /}"
     local email="${2}"
-    local domain="${3// /}"
+    local subdomain="${3// /}"
     local id="${4}"
     local logfile="/tmp/mkadm.${id}.log"
 
     [[ -f "${logfile}" ]] && rm -f "${logfile}"
 
     screen -L -Logfile "${logfile}" -dmS "deploy.${id}" \
-           mkadm -Un "${name}" -e "${email}" -D "${domain}" --subscription-id "${id}"
+           mkadm -Un "${name}" -e "${email}" --subdomain "${subdomain}" --subscription-id "${id}"
   else
     display_usage
   fi
