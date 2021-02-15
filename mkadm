@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.7.1"
+readonly VERSION="2.8.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -180,7 +180,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUd:D: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUD: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -250,9 +250,9 @@ function parse_arguments () {
       (-T|--snapshot-instance) OPT_SNAPSHOT_INSTANCE=true; shift ;;
       (--snapshot-tarball) OPT_SNAPSHOT_TARBALL=$2; shift 2 ;;
       (-U|--use-cache) OPT_USE_CACHE=true; shift ;;
-      (-d|--domain) OPT_DOMAIN=$2; shift 2 ;;
-      (-D|--subdomain) OPT_SUBDOMAIN=$2; shift 2 ;;
-      (--desktop) OPT_DESKTOP=$2; shift 2 ;;
+      (--domain) OPT_DOMAIN=$2; shift 2 ;;
+      (--subdomain) OPT_SUBDOMAIN=$2; shift 2 ;;
+      (-D|--desktop) OPT_DESKTOP=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -472,9 +472,9 @@ OPTIONS:
   -T, --snapshot-instance         Flag to create a tarball snapshot of an instance
       --snapshot-tarball <PATH>   The local tarball path for the instance snapshot
   -U, --use-cache                 Flag to use a prebuilt droplet snapshot for the instance
-  -d, --domain                    The top-level domain to use for the subdomains
-  -D, --subdomain                 The subdomain to use on the top-level domain
-      --desktop <OS>              Create a desktop version for OS
+      --domain                    The top-level domain to use for the subdomains
+      --subdomain                 The subdomain to use on the top-level domain
+  -D, --desktop <OS>              Build a desktop version for OS
 EOF
   exit 0
 }
@@ -764,20 +764,13 @@ function create_tarball () {
 
   local file="$(basename ${OPT_MIKI_DIRECTORY}).${VAL_RANDOM}.tar.gz"
 
-  is_valid_desktop && pop
-  pop
+  cd "$(dirname ${OPT_MIKI_DIRECTORY})"
 
   if [[ -d "${OPT_MIKI_DIRECTORY}" ]]; then
-    tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" \
-        -czf "${file}" --exclude ".git" \
+    tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" -czf "${file}" --exclude ".git" \
         "$(basename ${OPT_MIKI_DIRECTORY})"
-    if [[ -z "${OPT_INSTALL_REMOTELY}" ]]; then
-      delete_miki_directory
-    else
-      return 0
-    fi
   else
-    error "Cannot create a tarball. Aborting."
+    error "ERROR: Cannot create a tarball. Aborting."
   fi
 }
 
@@ -939,7 +932,7 @@ function display_greeting () {
   echo "================================================================================"
 }
 
-function is_local_install () {
+function is_local_build () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -z "${OPT_INSTALL_REMOTELY}" ]]; then
@@ -949,7 +942,7 @@ function is_local_install () {
   fi
 }
 
-function local_install () {
+function local_build () {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_USE_CACHE}" ]]; then
@@ -972,8 +965,7 @@ function local_install () {
   install_assets
   create_db_directory
 
-  create_desktop
-  create_tarball
+  # create_tarball
 }
 
 function check_droplet () {
@@ -1208,40 +1200,38 @@ function create_domain () {
 function remote_install () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -n "${OPT_EMAIL}" && -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_PATH}" && \
-        -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
-    push "${OPT_MIKI_DIRECTORY}"
+  push "${OPT_MIKI_DIRECTORY}"
 
-    create_password_file
-    create_remote_config_yml
-    create_init_sql
-    delete_password_file
-    copy_bin
+  create_password_file
+  create_remote_config_yml
+  create_init_sql
+  delete_password_file
+  copy_bin
 
-    create_tarball
+  create_tarball
 
-    set_ssh_keys
-    create_droplet
-    upload_tarball
-    delete_tarball
+  set_ssh_keys
+  create_droplet
+  upload_tarball
+  delete_tarball
 
-    upload_database_init
-    upload_pgadm
-    upload_pgsql
+  upload_database_init
+  upload_pgadm
+  upload_pgsql
 
-    install_miki
-    create_firewall
+  install_miki
+  create_firewall
 
-    reset_admin_password
-    start_miki_service
-    #notify_chargify
-    notify_auth0
-    notify_hook
-    create_domain
+  reset_admin_password
+  start_miki_service
+  notify_auth0
+  notify_hook
+  create_domain
 
-    display_greeting
-    delete_miki_directory
-  fi
+  display_greeting
+  delete_miki_directory
+
+  exit 0
 }
 
 function send_yaml_filter () {
@@ -1632,7 +1622,8 @@ function garbage_collect () {
   rm -rf /tmp/yarn--*
   rm -rf /tmp/mkadm.*.log
   rm -rf /tmp/core-js-banners
-  #rm -rf /tmp/v8-compile-cache*
+  rm -rf /tmp/v8-compile-cache*
+  rm -rf /tmp/tmp.*.miki-desktop
 
   exit 0
 }
@@ -1682,7 +1673,7 @@ function snapshot_instance () {
 function extract_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local desktop_directory="$(mktemp -d)"
+  local desktop_directory="$(mktemp -d --suffix .miki-desktop)"
 
   tar -C "${desktop_directory}" -xJf "${VAL_MIKI_DESKTOP}"
   cp -a "${OPT_MIKI_DIRECTORY}" "${desktop_directory}/miki-desktop/app"
@@ -1746,21 +1737,53 @@ function package_desktop () {
       electron-packager . --platform=darwin --out=out --icon=assets/icons/icon.icns --overwrite
       ;;
     *)
-      error "ERROR: The specified platform does not exist. Aborting."
+      error "ERROR: The specified platform is not supported. Aborting."
       ;;
   esac
 }
 
-function create_desktop () {
+function build_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
-    extract_desktop
-    delete_modules
-    install_modules
-    package_desktop
+  case "${OPT_DESKTOP}" in
+    linux)
+      echo "build_desktop linux"
+      electron-builder --linux --prepackaged "out/Miki Desktop-linux-x64"
+      ;;
+    windows)
+      echo "build_desktop windows"
+      electron-builder --windows --prepackaged "out/Miki Desktop-win32-x64"
+      ;;
+    *)
+      error "ERROR: The specified platform is not supported. Aborting."
+      ;;
+  esac
+}
 
-    exit 0
+
+function desktop_install () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  extract_desktop
+  delete_modules
+  install_modules
+  package_desktop
+  build_desktop
+
+  exit 0
+}
+
+function dispatch_install () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  #if [[ -n "${OPT_EMAIL}" && -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
+  if [[ -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
+    desktop_install
+  elif [[ -n "${OPT_EMAIL}" && -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_PATH}" && \
+          -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
+    remote_install
+  else
+    error "ERROR: Installation type not found. Aborting."
   fi
 }
 
@@ -1771,8 +1794,8 @@ function main () {
   set_component_names
   process_arguments "$@"
 
-  local_install
-  remote_install
+  local_build
+  dispatch_install
 }
 
 main "$@"
