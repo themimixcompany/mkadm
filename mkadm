@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.8.2"
+readonly VERSION="2.9.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -77,7 +77,7 @@ OPT_DROPLET_NAME=
 OPT_DROPLET_ADDRESS=
 OPT_DATABASE_NAME="defaultdb"
 OPT_DATABASE_USER="doadmin"
-OPT_DATABASE_INIT="${SELF_DIR}/dat/miki-core.pg.xz"
+OPT_DATABASE_INIT="${SELF_DIR}/dat/miki-core.postgres.xz"
 OPT_FIREWALL_NAME=
 OPT_FIREWALL_ADDRESSES=
 OPT_FIREWALL_PORTS="22,80,443"
@@ -118,6 +118,7 @@ OPT_USE_CACHE=
 OPT_DOMAIN="streamsharing.io"
 OPT_SUBDOMAIN=
 OPT_DESKTOP=
+OPT_SQLITE_DATABASE_INIT="${SELF_DIR}/dat/miki-core.sqlite.xz"
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -180,7 +181,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUD: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUD: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop:,sqlite-database-init: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -253,6 +254,7 @@ function parse_arguments () {
       (--domain) OPT_DOMAIN=$2; shift 2 ;;
       (--subdomain) OPT_SUBDOMAIN=$2; shift 2 ;;
       (-D|--desktop) OPT_DESKTOP=$2; shift 2 ;;
+      (--sqlite-database-init) OPT_SQLITE_DATABASE_INIT=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -413,68 +415,69 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-      --help                      Show this help
-      --debug                     Enable debugging mode
-      --verbose                   Enable verbose output
-      --version                   Display program version info
-  -n, --name <TEXT>               The name of the instance
-  -e, --email <EMAIL>             The email address of the admin account
-      --wiki-name <TEXT>          The wiki name
-      --wiki-domain <FQDN>        The wiki domain
-      --wiki-resources <PATH>     The remote path for wiki resources
-      --company-name <TEXT>       The company name
-      --company-domain <FQDN>     The company domain
-      --enable-wiki-ssl           Flag to enable wiki SSL on installation
-      --enable-db-ssl             Flag to enable database SSL on installation
-      --package-version <SEMVER>  The version number for package.json
-      --install-path <PATH>       The remote path of Miki on the instance
-  -p, --pgadm-path <PATH>         The local path of the pgadm program
-  -i, --install-remotely          Flag to perform remote installation
-  -K, --remove-self-ssh-key       Remove the SSH key of the host from the allowed SSH keys
-  -k, --ssh-keys <CSV>            Comma-separated list of allowed SSH keys on the instance
-      --droplet-name <TEXT>       The name of the droplet
-      --database-name <TEXT>      The name of the database
-      --database-user <TEXT>      The name of the database user
-      --database-init <PATH>      The local path to the database dump to import on the instance
-      --no-database-init          Flag to not initialize the instance with a database dump
-      --firewall-name <TEXT>      The name of firewall for the droplet
-  -A, --firewall-addresses <CSV>  Comma-separated list of IP addresses to allow on the droplet
-  -P, --firewall-ports <CSV>      Comma-separated list of allowed ports on the droplet
-  -f, --create-firewall           Flag to create a firewall from the instance name
-  -Y, --yaml-filter <JQ>          Send an updating YAML filter to the instance
-  -y, --query-filter <JQ>         Send a query YAML filter to the instance
-      --config-enable-ssl         Flag to enable SSL on the instance
-      --config-disable-ssl        Flag to Disable SSL on the instance
-      --config-domain-name <FQDN> Set the domain name of the instance
-  -l, --list-instances            Flag to list all instances
-  -s, --ssh                       Flag to connect to the instance via SSH
-  -c, --command <COMMAND>         Run an arbitrary command to the instance
-  -S, --sql                       Flag to connect to the SQL prompt of the instance
-  -F  --sql-file <PATH>           The local SQL file to upload and execute on the instance
-  -x, --expunge-instance          Flag to expunge the instance
-  -X, --force-expunge-instance    Flag to expunge the instance without confirmations
-  -r, --reset-admin-password      Flag to reset the admin password of the instance
-  -t, --create-support-account    Flag to create a support account on the instance
-      --power-on                  Flag to turn the instance on
-      --power-off                 Flag to turn the instance off
-      --restore-database <PATH>   The local path for the database file for restoration
-      --dump-database <PATH>      The local path for the database file for dumping
-      --restart-miki              Flag to restart the Miki service
-      --restart-machine           Flag to restart the remote machine
-      --origin-path <PATH>        The local origin path for file copying
-      --destination-path <PATH>   The remote destination path for file copying
-  -C, --check-name                Flag to return true if an instance already exits
-  -G, --garbage-collect           Flag to delete leftover files and directories
-  -N, --new-name <TEXT>           The new name for the instance
-      --subscription-id <ID>      The Chargify subscription ID
-  -R, --replace-instance          Flag to replace an instance with a snapshot
-      --replace-tarball <PATH>    The local tarball path for the instance replacement
-  -T, --snapshot-instance         Flag to create a tarball snapshot of an instance
-      --snapshot-tarball <PATH>   The local tarball path for the instance snapshot
-  -U, --use-cache                 Flag to use a prebuilt droplet snapshot for the instance
-      --domain                    The top-level domain to use for the subdomains
-      --subdomain                 The subdomain to use on the top-level domain
-  -D, --desktop <OS>              Build a desktop version for OS
+      --help                        Show this help
+      --debug                       Enable debugging mode
+      --verbose                     Enable verbose output
+      --version                     Display program version info
+  -n, --name <TEXT>                 The name of the instance
+  -e, --email <EMAIL>               The email address of the admin account
+      --wiki-name <TEXT>            The wiki name
+      --wiki-domain <FQDN>          The wiki domain
+      --wiki-resources <PATH>       The remote path for wiki resources
+      --company-name <TEXT>         The company name
+      --company-domain <FQDN>       The company domain
+      --enable-wiki-ssl             Flag to enable wiki SSL on installation
+      --enable-db-ssl               Flag to enable database SSL on installation
+      --package-version <SEMVER>    The version number for package.json
+      --install-path <PATH>         The remote path of Miki on the instance
+  -p, --pgadm-path <PATH>           The local path of the pgadm program
+  -i, --install-remotely            Flag to perform remote installation
+  -K, --remove-self-ssh-key         Remove the SSH key of the host from the allowed SSH keys
+  -k, --ssh-keys <CSV>              Comma-separated list of allowed SSH keys on the instance
+      --droplet-name <TEXT>         The name of the droplet
+      --database-name <TEXT>        The name of the database
+      --database-user <TEXT>        The name of the database user
+      --database-init <PATH>        The local path to the database dump to import on the instance
+      --no-database-init            Flag to not initialize the instance with a database dump
+      --firewall-name <TEXT>        The name of firewall for the droplet
+  -A, --firewall-addresses <CSV>    Comma-separated list of IP addresses to allow on the droplet
+  -P, --firewall-ports <CSV>        Comma-separated list of allowed ports on the droplet
+  -f, --create-firewall             Flag to create a firewall from the instance name
+  -Y, --yaml-filter <JQ>            Send an updating YAML filter to the instance
+  -y, --query-filter <JQ>           Send a query YAML filter to the instance
+      --config-enable-ssl           Flag to enable SSL on the instance
+      --config-disable-ssl          Flag to Disable SSL on the instance
+      --config-domain-name <FQDN>   Set the domain name of the instance
+  -l, --list-instances              Flag to list all instances
+  -s, --ssh                         Flag to connect to the instance via SSH
+  -c, --command <COMMAND>           Run an arbitrary command to the instance
+  -S, --sql                         Flag to connect to the SQL prompt of the instance
+  -F  --sql-file <PATH>             The local SQL file to upload and execute on the instance
+  -x, --expunge-instance            Flag to expunge the instance
+  -X, --force-expunge-instance      Flag to expunge the instance without confirmations
+  -r, --reset-admin-password        Flag to reset the admin password of the instance
+  -t, --create-support-account      Flag to create a support account on the instance
+      --power-on                    Flag to turn the instance on
+      --power-off                   Flag to turn the instance off
+      --restore-database <PATH>     The local path for the database file for restoration
+      --dump-database <PATH>        The local path for the database file for dumping
+      --restart-miki                Flag to restart the Miki service
+      --restart-machine             Flag to restart the remote machine
+      --origin-path <PATH>          The local origin path for file copying
+      --destination-path <PATH>     The remote destination path for file copying
+  -C, --check-name                  Flag to return true if an instance already exits
+  -G, --garbage-collect             Flag to delete leftover files and directories
+  -N, --new-name <TEXT>             The new name for the instance
+      --subscription-id <ID>        The Chargify subscription ID
+  -R, --replace-instance            Flag to replace an instance with a snapshot
+      --replace-tarball <PATH>      The local tarball path for the instance replacement
+  -T, --snapshot-instance           Flag to create a tarball snapshot of an instance
+      --snapshot-tarball <PATH>     The local tarball path for the instance snapshot
+  -U, --use-cache                   Flag to use a prebuilt droplet snapshot for the instance
+      --domain                      The top-level domain to use for the subdomains
+      --subdomain                   The subdomain to use on the top-level domain
+  -D, --desktop <OS>                Build a desktop version for OS
+      --sqlite-database-init <PATH> The local path to the SQLite3 database to use for init
 EOF
   exit 0
 }
@@ -1711,6 +1714,12 @@ function install_modules () {
   fi
 }
 
+function install_sqlite () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  unxz -c "${OPT_SQLITE_DATABASE_INIT}" > app/miki/db/db.sqlite
+}
+
 function is_valid_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1765,6 +1774,7 @@ function desktop_install () {
   extract_desktop
   delete_modules
   install_modules
+  install_sqlite
   package_desktop
   build_desktop
 
@@ -1782,6 +1792,42 @@ function dispatch_install () {
     remote_install
   else
     error "ERROR: Installation type not found. Aborting."
+  fi
+}
+
+
+function load_sqlite_file () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local source_file="${1}"
+  local dest_file="${1}"
+
+  cat "${source_file}" | sqlite3 "${dest_file}"
+}
+
+function create_sqlite_admin_sql_file () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local name=Administrator
+  local id=1
+  local date=$(generate_date)
+
+  VAL_ADMIN_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
+
+  cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
+UPDATE users SET email = '${OPT_EMAIL}' WHERE id = '${id}';
+UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE id = '${id}';
+UPDATE users SET "mustChangePwd" = 't' WHERE id = '${id}';
+UPDATE settings SET value = '{"v":"https://${VAL_DOMAIN_NAME}"}' WHERE key = 'host';
+EOF
+}
+
+function reset_sqlite_admin_password () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  if [[ -n "${OPT_EMAIL}" && -n "${VAL_DROPLET_NAME}" ]]; then
+    generate_admin_password
+    create_sqlite_admin_sql_file
   fi
 }
 
