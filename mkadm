@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.9.1"
+readonly VERSION="2.9.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1673,6 +1673,18 @@ function snapshot_instance () {
   exit 0
 }
 
+function is_valid_desktop () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  if [[ "${OPT_DESKTOP}" == "linux" || \
+        "${OPT_DESKTOP}" == "windows" || \
+        "${OPT_DESKTOP}" == "macos" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 function extract_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1720,15 +1732,44 @@ function install_sqlite () {
   unxz -c "${OPT_SQLITE_DATABASE_INIT}" > app/miki/db/db.sqlite
 }
 
-function is_valid_desktop () {
+function load_sqlite_file () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ "${OPT_DESKTOP}" == "linux" || \
-        "${OPT_DESKTOP}" == "windows" || \
-        "${OPT_DESKTOP}" == "macos" ]]; then
-    return 0
-  else
-    return 1
+  local source_file="${1}"
+  local dest_file="${1}"
+
+  cat "${source_file}" | sqlite3 "${dest_file}"
+}
+
+function create_sqlite_admin_sql_file () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local id=1
+  local date=$(generate_date)
+
+  VAL_ADMIN_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
+
+  cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
+UPDATE users SET email = '${OPT_EMAIL}' WHERE id = '${id}';
+UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE id = '${id}';
+UPDATE users SET "mustChangePwd" = 't' WHERE id = '${id}';
+UPDATE settings SET value = '{"v":"https://${VAL_DOMAIN_NAME}"}' WHERE key = 'host';
+EOF
+}
+
+function load_sqlite_admin_sql_file () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  load_sqlite_file "${VAL_ADMIN_SQL_LOCAL_FILE}" app/miki/db/db.sqlite
+}
+
+function reset_sqlite_admin_password () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  if [[ -n "${OPT_DESKTOP}" && -n "${OPT_EMAIL}" ]]; then
+    generate_admin_password
+    create_sqlite_admin_sql_file
+    load_sqlite_admin_sql_file
   fi
 }
 
@@ -1767,6 +1808,14 @@ function build_desktop () {
   esac
 }
 
+function desktop_display_greeting () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  echo "================================================================================"
+  echo " Username: ${OPT_EMAIL}"
+  echo " Password: ${VAL_ADMIN_PASSWORD}"
+  echo "================================================================================"
+}
 
 function desktop_install () {
   debug "${FUNCNAME[0]}" "$@"
@@ -1775,8 +1824,10 @@ function desktop_install () {
   delete_modules
   install_modules
   install_sqlite
+  reset_sqlite_admin_password
   package_desktop
   build_desktop
+  desktop_display_greeting
 
   exit 0
 }
@@ -1784,8 +1835,7 @@ function desktop_install () {
 function dispatch_install () {
   debug "${FUNCNAME[0]}" "$@"
 
-  #if [[ -n "${OPT_EMAIL}" && -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
-  if [[ -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
+  if [[ -n "${OPT_EMAIL}" && -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
     desktop_install
   elif [[ -n "${OPT_EMAIL}" && -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_PATH}" && \
           -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
@@ -1795,41 +1845,6 @@ function dispatch_install () {
   fi
 }
 
-
-function load_sqlite_file () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  local source_file="${1}"
-  local dest_file="${1}"
-
-  cat "${source_file}" | sqlite3 "${dest_file}"
-}
-
-function create_sqlite_admin_sql_file () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  local name=Administrator
-  local id=1
-  local date=$(generate_date)
-
-  VAL_ADMIN_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
-
-  cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
-UPDATE users SET email = '${OPT_EMAIL}' WHERE id = '${id}';
-UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE id = '${id}';
-UPDATE users SET "mustChangePwd" = 't' WHERE id = '${id}';
-UPDATE settings SET value = '{"v":"https://${VAL_DOMAIN_NAME}"}' WHERE key = 'host';
-EOF
-}
-
-function reset_sqlite_admin_password () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  if [[ -n "${OPT_EMAIL}" && -n "${VAL_DROPLET_NAME}" ]]; then
-    generate_admin_password
-    create_sqlite_admin_sql_file
-  fi
-}
 
 function main () {
   debug "${FUNCNAME[0]}" "$@"
