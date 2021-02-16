@@ -41,3 +41,6 @@ upload-dev:
   rsync -avzP mkadm control:src/mkadm/mkadm-dev
   ssh control chmod +x src/mkadm/mkadm-dev
 
+upload-prod:
+  rsync -avzP mkadm control:src/mkadm/mkadm
+  ssh control chmod +x src/mkadm/mkadm
