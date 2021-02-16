@@ -1747,11 +1747,9 @@ function build_desktop () {
 
   case "${OPT_DESKTOP}" in
     linux)
-      echo "build_desktop linux"
       electron-builder --linux --prepackaged "out/Miki Desktop-linux-x64"
       ;;
     windows)
-      echo "build_desktop windows"
       electron-builder --windows --prepackaged "out/Miki Desktop-win32-x64"
       ;;
     *)
