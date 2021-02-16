@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.9.2"
+readonly VERSION="2.9.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -196,7 +196,7 @@ function parse_arguments () {
       (--verbose) OPT_VERBOSE=true; shift ;;
       (--version) OPT_VERSION=true; shift ;;
       (-n|--name) OPT_NAME="${2,,}"; shift 2 ;;
-      (-e|--email) OPT_EMAIL=$2; OPT_INSTALL_REMOTELY=true; shift 2 ;;
+      (-e|--email) OPT_EMAIL=$2; shift 2 ;;
       (--wiki-name) OPT_WIKI_NAME=$2; shift 2 ;;
       (--wiki-domain) OPT_WIKI_DOMAIN=$2; shift 2 ;;
       (--wiki-resources) OPT_WIKI_RESOURCES=$2; shift 2 ;;
@@ -361,8 +361,8 @@ function process_arguments () {
     exit 0
   elif [[ -n "${OPT_CREATE_SUPPORT_ACCOUNT}" ]]; then
     create_support_account
-  elif [[ -n "${OPT_INSTALL_REMOTELY}" ]]; then
-    check_droplet
+  # elif [[ -n "${OPT_INSTALL_REMOTELY}" ]]; then
+  #   check_droplet
   elif [[ -n "${OPT_SSH}" ]]; then
     connect_ssh
   elif [[ -n "${OPT_SQL}" ]]; then
@@ -1736,7 +1736,7 @@ function load_sqlite_file () {
   debug "${FUNCNAME[0]}" "$@"
 
   local source_file="${1}"
-  local dest_file="${1}"
+  local dest_file="${2}"
 
   cat "${source_file}" | sqlite3 "${dest_file}"
 }
@@ -1828,6 +1828,7 @@ function desktop_install () {
   package_desktop
   build_desktop
   desktop_display_greeting
+  # notify_hook
 
   exit 0
 }
@@ -1837,8 +1838,9 @@ function dispatch_install () {
 
   if [[ -n "${OPT_EMAIL}" && -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
     desktop_install
-  elif [[ -n "${OPT_EMAIL}" && -n "${OPT_INSTALL_REMOTELY}" && -n "${OPT_INSTALL_PATH}" && \
+  elif [[ -n "${OPT_EMAIL}" && -z "${OPT_DESKTOP}" && -n "${OPT_INSTALL_PATH}" && \
           -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
+    check_droplet
     remote_install
   else
     error "ERROR: Installation type not found. Aborting."
