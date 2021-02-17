@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.11.0"
+readonly VERSION="2.11.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -38,6 +38,8 @@ readonly VAL_MODULES_WINDOWS_MIKI="${SELF_DIR}/dat/node_modules-windows-miki.tar
 readonly VAL_MODULES_WINDOWS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-windows-miki-desktop.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI="${SELF_DIR}/dat/node_modules-macos-miki.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-macos-miki-desktop.tar.xz"
+
+readonly VAL_SPACES_EXPIRY="3"
 
 VAL_DOMAIN_NAME=
 VAL_DROPLET_NAME=
@@ -1701,7 +1703,7 @@ function is_valid_desktop () {
 function extract_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local OPT_MIKI_DESKTOP_DIRECTORY="$(mktemp -d --suffix .miki-desktop)"
+  OPT_MIKI_DESKTOP_DIRECTORY="$(mktemp -d --suffix .miki-desktop)"
 
   tar -C "${OPT_MIKI_DESKTOP_DIRECTORY}" -xJf "${VAL_MIKI_DESKTOP}"
   cp -a "${OPT_MIKI_DIRECTORY}" "${OPT_MIKI_DESKTOP_DIRECTORY}/miki-desktop/app"
@@ -1829,22 +1831,23 @@ function upload_file () {
   local file="$1"
   local name="$2"
 
-  s3cmd -P --expiry-days 3 put "${file}" "${OPT_SPACES_BUCKET}/${name}"
+  s3cmd -P --expiry-days "${VAL_SPACES_EXPIRY}" \
+        put "${file}" "${OPT_SPACES_BUCKET}/${name}"
 }
 
 function upload_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local date=$(generate_date)
+  local date=$(date +"%Y%m%dT%H%M%S")
   local prefix="${date}.${OPT_SUBSCRIPTION_ID}"
 
   case "${OPT_DESKTOP}" in
     linux)
-      upload_file "out/*.AppImage" "${prefix}.miki-desktop.AppImage"
+      upload_file out/*.AppImage "${prefix}.miki-desktop.AppImage"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}.miki-desktop.AppImage"
       ;;
     windows)
-      upload_file "out/*.exe" "${prefix}.miki-desktop.exe"
+      upload_file out/*.exe "${prefix}.miki-desktop.exe"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}.miki-desktop.exe"
       ;;
     macos)
