@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.10.0"
+readonly VERSION="2.11.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -119,6 +119,12 @@ OPT_DOMAIN="streamsharing.io"
 OPT_SUBDOMAIN=
 OPT_DESKTOP=
 OPT_SQLITE_DATABASE_INIT="${SELF_DIR}/dat/miki-core.sqlite.xz"
+OPT_SPACES_BASE="fra1.digitaloceanspaces.com"
+OPT_SPACES_SUBDOMAIN="mimix"
+OPT_SPACES_URL="http://${OPT_SPACES_SUBDOMAIN}.${OPT_SPACES_BASE}"
+OPT_MIKI_DESKTOP_DIRECTORY=
+OPT_SPACES_BUCKET="s3://mimix"
+OPT_DESKTOP_URL=
 
 function error () {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -1633,6 +1639,7 @@ function garbage_collect () {
   rm -rf /tmp/core-js-banners
   rm -rf /tmp/v8-compile-cache*
   rm -rf /tmp/tmp.*.miki-desktop
+  rm -rf /tmp/tmp.*.sql
 
   exit 0
 }
@@ -1694,11 +1701,11 @@ function is_valid_desktop () {
 function extract_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local desktop_directory="$(mktemp -d --suffix .miki-desktop)"
+  local OPT_MIKI_DESKTOP_DIRECTORY="$(mktemp -d --suffix .miki-desktop)"
 
-  tar -C "${desktop_directory}" -xJf "${VAL_MIKI_DESKTOP}"
-  cp -a "${OPT_MIKI_DIRECTORY}" "${desktop_directory}/miki-desktop/app"
-  push "${desktop_directory}/miki-desktop"
+  tar -C "${OPT_MIKI_DESKTOP_DIRECTORY}" -xJf "${VAL_MIKI_DESKTOP}"
+  cp -a "${OPT_MIKI_DIRECTORY}" "${OPT_MIKI_DESKTOP_DIRECTORY}/miki-desktop/app"
+  push "${OPT_MIKI_DESKTOP_DIRECTORY}/miki-desktop"
 }
 
 function delete_modules () {
@@ -1816,6 +1823,45 @@ function build_desktop () {
   esac
 }
 
+function upload_file () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local file="$1"
+  local name="$2"
+
+  s3cmd -P --expiry-days 3 put "${file}" "${OPT_SPACES_BUCKET}/${name}"
+}
+
+function upload_desktop () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local date=$(generate_date)
+  local prefix="${date}.${OPT_SUBSCRIPTION_ID}"
+
+  case "${OPT_DESKTOP}" in
+    linux)
+      upload_file "out/*.AppImage" "${prefix}.miki-desktop.AppImage"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}.miki-desktop.AppImage"
+      ;;
+    windows)
+      upload_file "out/*.exe" "${prefix}.miki-desktop.exe"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}.miki-desktop.exe"
+      ;;
+    macos)
+      true
+      ;;
+    *)
+      error "ERROR: The specified platform is not supported. Aborting."
+      ;;
+  esac
+}
+
+function delete_miki_desktop_directory () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  [[ -d "${OPT_MIKI_DESKTOP_DIRECTORY}" ]] && rm -rf "${OPT_MIKI_DESKTOP_DIRECTORY}"
+}
+
 function desktop_display_greeting () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1823,7 +1869,7 @@ function desktop_display_greeting () {
   echo " Your new Miki Desktop instance is now ready."
   echo ""
   echo " Name: ${OPT_NAME}"
-  echo " URL:"
+  echo " URL: ${OPT_DESKTOP_URL}"
   echo " Username: ${OPT_EMAIL}"
   echo " Password: ${VAL_ADMIN_PASSWORD}"
   echo "================================================================================"
@@ -1839,6 +1885,8 @@ function desktop_install () {
   reset_sqlite_admin_password
   package_desktop
   build_desktop
+  upload_desktop
+  delete_miki_desktop_directory
   desktop_display_greeting
   # notify_hook
 
