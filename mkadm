@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.11.2"
+readonly VERSION="2.12.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1133,7 +1133,7 @@ function delete_auth0_user () {
 function notify_hook () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local json=$(jq . << EOF
+  local json_hosted=$(jq . << EOF
 {
   "data": {
     "subscription_id": "${OPT_SUBSCRIPTION_ID}",
@@ -1146,6 +1146,25 @@ function notify_hook () {
 }
 EOF
 )
+
+  local json_desktop=$(jq . << EOF
+{
+  "data": {
+    "subscription_id": "${OPT_SUBSCRIPTION_ID}",
+    "name": "${OPT_NAME}",
+    "username": "${OPT_EMAIL}",
+    "password": "${VAL_ADMIN_PASSWORD}"
+  }
+}
+EOF
+)
+
+
+  if [[ -z "${OPT_DESKTOP}" ]]; then
+    json="${json_hosted}"
+  else
+    json="${json_desktop}"
+  fi
 
   curl "${VAL_HOOK_URL}/control" \
        -s -X POST \
@@ -1778,6 +1797,12 @@ function load_sqlite_admin_sql_file () {
   load_sqlite_file "${VAL_ADMIN_SQL_LOCAL_FILE}" app/miki/db/db.sqlite
 }
 
+function delete_sqlite_admin_sql_file () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  [[ -f "${VAL_ADMIN_SQL_LOCAL_FILE}" ]] && rm -f "${VAL_ADMIN_SQL_LOCAL_FILE}"
+}
+
 function reset_sqlite_admin_password () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1785,6 +1810,7 @@ function reset_sqlite_admin_password () {
     generate_admin_password
     create_sqlite_admin_sql_file
     load_sqlite_admin_sql_file
+    delete_sqlite_admin_sql_file
   fi
 }
 
@@ -1891,7 +1917,7 @@ function desktop_install () {
   upload_desktop
   delete_miki_desktop_directory
   desktop_display_greeting
-  # notify_hook
+  notify_hook
 
   exit 0
 }
