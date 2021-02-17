@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.9.3"
+readonly VERSION="2.10.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -107,7 +107,7 @@ OPT_DESTINATION_PATH=
 OPT_CHECK_NAME=
 OPT_GARBAGE_COLLECT=
 OPT_NEW_NAME=
-OPT_SUBSCRIPTION_ID=
+OPT_SUBSCRIPTION_ID="01234567"
 OPT_DELETE_AUTH0_USER=
 OPT_REPLACE_INSTANCE=
 OPT_REPLACE_TARBALL_BASE="miki-base.tar.xz"
@@ -634,6 +634,10 @@ function update_files () {
       sed -i -e "s|${i}|${SUBSTITUTIONS[$i]}|g" "$file"
     done
   done
+
+  if [[ -n "${OPT_SUBSCRIPTION_ID}" ]]; then
+    sed -i -e "s/{{\ info.currentVersion\ }}/${OPT_SUBSCRIPTION_ID}/" client/components/admin/admin-system.vue
+  fi
 }
 
 function clone_locales_repository () {
@@ -1202,6 +1206,8 @@ function create_domain () {
 
 function remote_install () {
   debug "${FUNCNAME[0]}" "$@"
+
+  check_droplet
 
   push "${OPT_MIKI_DIRECTORY}"
 
@@ -1776,15 +1782,17 @@ function reset_sqlite_admin_password () {
 function package_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
+  local icons="assets/icons/icon.icns"
+
   case "${OPT_DESKTOP}" in
     linux)
-      electron-packager . --platform=linux --out=out --icon=assets/icons/icon.icns --overwrite
+      electron-packager . --platform=linux --out=out --icon="${icons}" --overwrite
       ;;
     windows)
-      electron-packager . --platform=win32 --out=out --icon=assets/icons/icon.icns --overwrite
+      electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite
       ;;
     macos)
-      electron-packager . --platform=darwin --out=out --icon=assets/icons/icon.icns --overwrite
+      electron-packager . --platform=darwin --out=out --icon="${icons}" --overwrite
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1812,6 +1820,10 @@ function desktop_display_greeting () {
   debug "${FUNCNAME[0]}" "$@"
 
   echo "================================================================================"
+  echo " Your new Miki Desktop instance is now ready."
+  echo ""
+  echo " Name: ${OPT_NAME}"
+  echo " URL:"
   echo " Username: ${OPT_EMAIL}"
   echo " Password: ${VAL_ADMIN_PASSWORD}"
   echo "================================================================================"
@@ -1840,7 +1852,6 @@ function dispatch_install () {
     desktop_install
   elif [[ -n "${OPT_EMAIL}" && -z "${OPT_DESKTOP}" && -n "${OPT_INSTALL_PATH}" && \
           -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
-    check_droplet
     remote_install
   else
     error "ERROR: Installation type not found. Aborting."

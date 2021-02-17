@@ -16,7 +16,7 @@
                   v-list-item-avatar
                     v-icon.blue.white--text mdi-application-export
                   v-list-item-content
-                    v-list-item-title Miki Concierge
+                    v-list-item-title MCenter ID
                     v-list-item-subtitle {{ info.currentVersion }}
                 v-list-item
                   v-list-item-avatar
