@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.12.0"
+readonly VERSION="2.12.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -51,11 +51,12 @@ VAL_ADMIN_PASSWORD_HASH=
 VAL_ADMIN_SQL_LOCAL_FILE=
 VAL_ADMIN_SQL_REMOTE_FILE=
 
-OPT_CREATE_SUPPORT_ACCOUNT=
 VAL_SUPPORT_PASSWORD=
 VAL_SUPPORT_PASSWORD_HASH=
 VAL_SUPPORT_SQL_LOCAL_FILE=
 VAL_SUPPORT_SQL_REMOTE_FILE=
+
+VAL_MIKI_VERSION=
 
 OPT_NAME=
 OPT_EMAIL=
@@ -98,6 +99,7 @@ OPT_EXPUNGE_INSTANCE=
 OPT_FORCE_EXPUNGE_INSTANCE=
 OPT_LIST_INSTANCES=
 OPT_RESET_ADMIN_PASSWORD=
+OPT_CREATE_SUPPORT_ACCOUNT=
 OPT_POWER_ON=
 OPT_POWER_OFF=
 OPT_RESTORE_DATABASE=
@@ -642,6 +644,8 @@ function update_files () {
       sed -i -e "s|${i}|${SUBSTITUTIONS[$i]}|g" "$file"
     done
   done
+
+  sed -i -e "9s/29/32/" server/core/kernel.js
 
   if [[ -n "${OPT_SUBSCRIPTION_ID}" ]]; then
     sed -i -e "s/{{\ info.currentVersion\ }}/${OPT_SUBSCRIPTION_ID}/" client/components/admin/admin-system.vue
@@ -1729,6 +1733,12 @@ function extract_desktop () {
   push "${OPT_MIKI_DESKTOP_DIRECTORY}/miki-desktop"
 }
 
+function set_miki_version () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  VAL_MIKI_VERSION=$(jq -r '.version' app/miki/package.json)
+}
+
 function delete_modules () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1857,24 +1867,24 @@ function upload_file () {
   local file="$1"
   local name="$2"
 
-  s3cmd -P --expiry-days "${VAL_SPACES_EXPIRY}" \
-        put "${file}" "${OPT_SPACES_BUCKET}/${name}"
+  s3cmd -P --expiry-days "${VAL_SPACES_EXPIRY}" put \
+        "${file}" "${OPT_SPACES_BUCKET}/${name}"
 }
 
 function upload_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local date=$(date +"%Y%m%dT%H%M%S")
-  local prefix="${date}.${OPT_SUBSCRIPTION_ID}"
+  local date=$(date +"%Y%m%d%H%M%S")
+  local prefix="miki-desktop/${date}/${OPT_SUBSCRIPTION_ID}"
 
   case "${OPT_DESKTOP}" in
     linux)
-      upload_file out/*.AppImage "${prefix}.miki-desktop.AppImage"
-      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}.miki-desktop.AppImage"
+      upload_file out/*.AppImage "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.AppImage"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.AppImage"
       ;;
     windows)
-      upload_file out/*.exe "${prefix}.miki-desktop.exe"
-      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}.miki-desktop.exe"
+      upload_file out/*.exe "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
       ;;
     macos)
       true
@@ -1908,6 +1918,7 @@ function desktop_install () {
   debug "${FUNCNAME[0]}" "$@"
 
   extract_desktop
+  set_miki_version
   delete_modules
   install_modules
   install_sqlite
