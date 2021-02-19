@@ -11,12 +11,13 @@
           v-flex(lg6 xs12)
             v-card.animated.fadeInUp
               v-btn.animated.fadeInLeft.wait-p2s.btn-animate-rotate(fab, absolute, :right='!$vuetify.rtl', :left='$vuetify.rtl', top, small, light, @click='refresh'): v-icon(color='grey') mdi-refresh
+              v-subheader Miki
               v-list(two-line, dense)
                 v-list-item
                   v-list-item-avatar
                     v-icon.blue.white--text mdi-application-export
                   v-list-item-content
-                    v-list-item-title MCenter ID
+                    v-list-item-title Miki
                     v-list-item-subtitle {{ info.currentVersion }}
                 v-list-item
                   v-list-item-avatar
