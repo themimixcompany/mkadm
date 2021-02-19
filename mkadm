@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.13.0"
+readonly VERSION="2.13.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -944,16 +944,18 @@ function create_firewall () {
 function display_greeting () {
   debug "${FUNCNAME[0]}" "$@"
 
-  echo ""
-  echo "================================================================================"
-  echo " Your new Miki instance is ready."
-  echo ""
-  echo " Name: ${OPT_NAME}"
-  echo " URL: https://${VAL_DOMAIN_NAME}"
-  echo " Address: ${OPT_DROPLET_ADDRESS}"
-  echo " Username: ${OPT_EMAIL}"
-  echo " Password: ${VAL_ADMIN_PASSWORD}"
-  echo "================================================================================"
+  cat << EOF > /dev/stdout
+
+================================================================================
+Your new Miki instance is ready.
+
+Name: ${OPT_NAME}
+URL: https://${VAL_DOMAIN_NAME}
+Address: ${OPT_DROPLET_ADDRESS}
+Username: ${OPT_EMAIL}
+Password: ${VAL_ADMIN_PASSWORD}
+================================================================================
+EOF
 }
 
 function is_local_build () {
@@ -1933,15 +1935,17 @@ function delete_miki_desktop_directory () {
 function desktop_display_greeting () {
   debug "${FUNCNAME[0]}" "$@"
 
-  echo ""
-  echo "================================================================================"
-  echo " Your new Miki Desktop instance is ready."
-  echo ""
-  echo " Name: ${OPT_NAME}"
-  echo " URL: ${OPT_DESKTOP_URL}"
-  echo " Username: ${OPT_EMAIL}"
-  echo " Password: ${VAL_ADMIN_PASSWORD}"
-  echo "================================================================================"
+  cat << EOF > /dev/stdout
+
+================================================================================
+Your new Miki Desktop instance is ready.
+
+Name: ${OPT_NAME}
+URL: ${OPT_DESKTOP_URL}
+Username: ${OPT_EMAIL}
+Password: ${VAL_ADMIN_PASSWORD}
+================================================================================
+EOF
 }
 
 function desktop_install () {
