@@ -112,7 +112,7 @@ function run () {
     [[ -f "${logfile}" ]] && rm -f "${logfile}"
 
     screen -L -Logfile "${logfile}" -dmS "deploy.${id}" \
-           mkadm -Un "${name}" -e "${email}" --subdomain "${subdomain}" --subscription-id "${id}"
+           mkadm -Un "${name}" --email "${email}" --subdomain "${subdomain}" --subscription-id "${id}"
   else
     display_usage
   fi

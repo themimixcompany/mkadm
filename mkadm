@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.12.2"
+readonly VERSION="2.12.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -39,7 +39,7 @@ readonly VAL_MODULES_WINDOWS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-windows-
 readonly VAL_MODULES_MACOS_MIKI="${SELF_DIR}/dat/node_modules-macos-miki.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-macos-miki-desktop.tar.xz"
 
-readonly VAL_SPACES_EXPIRY="3"
+readonly VAL_SPACES_EXPIRY="30"
 
 VAL_DOMAIN_NAME=
 VAL_DROPLET_NAME=
@@ -123,11 +123,11 @@ OPT_DOMAIN="streamsharing.io"
 OPT_SUBDOMAIN=
 OPT_DESKTOP=
 OPT_SQLITE_DATABASE_INIT="${SELF_DIR}/dat/miki-core.sqlite.xz"
-OPT_SPACES_BASE="fra1.digitaloceanspaces.com"
-OPT_SPACES_SUBDOMAIN="mimix"
+OPT_SPACES_BASE="nyc3.digitaloceanspaces.com"
+OPT_SPACES_SUBDOMAIN="mimixspc"
 OPT_SPACES_URL="http://${OPT_SPACES_SUBDOMAIN}.${OPT_SPACES_BASE}"
 OPT_MIKI_DESKTOP_DIRECTORY=
-OPT_SPACES_BUCKET="s3://mimix"
+OPT_SPACES_BUCKET="s3://mimixspc"
 OPT_DESKTOP_URL=
 
 function error () {
@@ -191,7 +191,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUD: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop:,sqlite-database-init: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUB:D: --longoptions help,debug,verbose,version,name:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop:,sqlite-database-init: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -262,7 +262,7 @@ function parse_arguments () {
       (--snapshot-tarball) OPT_SNAPSHOT_TARBALL=$2; shift 2 ;;
       (-U|--use-cache) OPT_USE_CACHE=true; shift ;;
       (--domain) OPT_DOMAIN=$2; shift 2 ;;
-      (--subdomain) OPT_SUBDOMAIN=$2; shift 2 ;;
+      (-B|--subdomain) OPT_SUBDOMAIN=$2; shift 2 ;;
       (-D|--desktop) OPT_DESKTOP=$2; shift 2 ;;
       (--sqlite-database-init) OPT_SQLITE_DATABASE_INIT=$2; shift 2 ;;
       (--) shift; break ;;
@@ -485,7 +485,7 @@ OPTIONS:
       --snapshot-tarball <PATH>     The local tarball path for the instance snapshot
   -U, --use-cache                   Flag to use a prebuilt droplet snapshot for the instance
       --domain                      The top-level domain to use for the subdomains
-      --subdomain                   The subdomain to use on the top-level domain
+  -B, --subdomain                   The subdomain to use on the top-level domain
   -D, --desktop <OS>                Build a desktop version for OS
       --sqlite-database-init <PATH> The local path to the SQLite3 database to use for init
 EOF
@@ -1874,8 +1874,10 @@ function upload_file () {
 function upload_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local suffix=$(generate_date | sha256sum | awk '{print $1}')
-  local prefix="miki-desktop/${OPT_SUBSCRIPTION_ID}/${suffix}"
+  #local suffix=$(generate_date | sha256sum | awk '{print $1}')
+  #local prefix="miki-desktop/${OPT_SUBSCRIPTION_ID}/${suffix}"
+  local hash=$(echo ${OPT_SUBSCRIPTION_ID}${OPT_SUBDOMAIN} | sha256sum | awk '{print $1}')
+  local prefix="miki-desktop/${hash}"
 
   case "${OPT_DESKTOP}" in
     linux)
