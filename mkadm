@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.12.4"
+readonly VERSION="2.13.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -944,6 +944,7 @@ function create_firewall () {
 function display_greeting () {
   debug "${FUNCNAME[0]}" "$@"
 
+  echo ""
   echo "================================================================================"
   echo " Your new Miki instance is ready."
   echo ""
@@ -1085,7 +1086,7 @@ function notify_auth0 () {
 
   local token=$(get_auth0_token)
 
-  local json1=$(jq . << EOF
+  local json_hosted=$(jq . << EOF
 {
   "user_id": "${OPT_NAME}",
   "email": "${OPT_EMAIL}",
@@ -1103,25 +1104,49 @@ function notify_auth0 () {
 EOF
 )
 
-  local json2=$(jq . << EOF
+  local json_desktop=$(jq . << EOF
+{
+  "user_id": "${OPT_NAME}",
+  "email": "${OPT_EMAIL}",
+  "connection": "Username-Password-Authentication",
+  "password": "${VAL_ADMIN_PASSWORD}",
+  "email_verified": false,
+  "app_metadata": {
+    "url": "${OPT_DESKTOP_URL}",
+    "ip": "",
+    "pw": "${VAL_ADMIN_PASSWORD}",
+    "domain": "${OPT_DOMAIN}",
+    "subdomain": "${OPT_SUBDOMAIN}"
+  }
+}
+EOF
+)
+
+  local json_user=$(jq . << EOF
 {
   "user_id": "auth0|${OPT_NAME}"
 }
 EOF
 )
 
+  if [[ -z "${OPT_DESKTOP}" ]]; then
+    json="${json_hosted}"
+  else
+    json="${json_desktop}"
+  fi
+
   curl "https://mimix.us.auth0.com/api/v2/users" \
        -s -X POST \
        -H "Authorization: Bearer ${token}" \
        -H "Content-Type: application/json" \
-       -d "${json1}" || return 0
+       -d "${json}" || return 0
 
 
   curl "https://mimix.us.auth0.com/api/v2/jobs/verification-email" \
        -s -X POST \
        -H "Authorization: Bearer ${token}" \
        -H "Content-Type: application/json" \
-       -d "${json2}" || return 0
+       -d "${json_user}" || return 0
 }
 
 function delete_auth0_user () {
@@ -1908,6 +1933,7 @@ function delete_miki_desktop_directory () {
 function desktop_display_greeting () {
   debug "${FUNCNAME[0]}" "$@"
 
+  echo ""
   echo "================================================================================"
   echo " Your new Miki Desktop instance is ready."
   echo ""
@@ -1923,16 +1949,22 @@ function desktop_install () {
 
   extract_desktop
   set_miki_version
+
   delete_modules
   install_modules
   install_sqlite
+
   reset_sqlite_admin_password
+
   package_desktop
   build_desktop
   upload_desktop
-  delete_miki_desktop_directory
-  desktop_display_greeting
+
+  notify_auth0
   notify_hook
+
+  desktop_display_greeting
+  delete_miki_desktop_directory
 
   exit 0
 }
