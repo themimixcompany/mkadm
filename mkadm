@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.12.3"
+readonly VERSION="2.12.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -647,8 +647,12 @@ function update_files () {
 
   sed -i -e "9s/29/32/" server/core/kernel.js
 
-  if [[ -n "${OPT_SUBSCRIPTION_ID}" ]]; then
-    sed -i -e "s/{{\ info.currentVersion\ }}/${OPT_SUBSCRIPTION_ID}/" client/components/admin/admin-system.vue
+  if [[ -n "${OPT_DESKTOP}" ]]; then
+    sed -i -e "20s/Miki/Miki Desktop/" client/components/admin/admin-system.vue
+  fi
+
+  if [[ -n "${OPT_SUBDOMAIN}" ]]; then
+    sed -i -e "21s/{{\ info.currentVersion\ }}/${OPT_SUBDOMAIN}/" client/components/admin/admin-system.vue
   fi
 }
 
@@ -941,7 +945,7 @@ function display_greeting () {
   debug "${FUNCNAME[0]}" "$@"
 
   echo "================================================================================"
-  echo " Your new Miki instance is now ready."
+  echo " Your new Miki instance is ready."
   echo ""
   echo " Name: ${OPT_NAME}"
   echo " URL: https://${VAL_DOMAIN_NAME}"
@@ -1874,8 +1878,6 @@ function upload_file () {
 function upload_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  #local suffix=$(generate_date | sha256sum | awk '{print $1}')
-  #local prefix="miki-desktop/${OPT_SUBSCRIPTION_ID}/${suffix}"
   local hash=$(echo ${OPT_SUBSCRIPTION_ID}${OPT_SUBDOMAIN} | sha256sum | awk '{print $1}')
   local prefix="miki-desktop/${hash}"
 
@@ -1907,7 +1909,7 @@ function desktop_display_greeting () {
   debug "${FUNCNAME[0]}" "$@"
 
   echo "================================================================================"
-  echo " Your new Miki Desktop instance is now ready."
+  echo " Your new Miki Desktop instance is ready."
   echo ""
   echo " Name: ${OPT_NAME}"
   echo " URL: ${OPT_DESKTOP_URL}"
