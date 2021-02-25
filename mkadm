@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.13.2"
+readonly VERSION="2.13.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -38,6 +38,7 @@ readonly VAL_MODULES_WINDOWS_MIKI="${SELF_DIR}/dat/node_modules-windows-miki.tar
 readonly VAL_MODULES_WINDOWS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-windows-miki-desktop.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI="${SELF_DIR}/dat/node_modules-macos-miki.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-macos-miki-desktop.tar.xz"
+readonly VAL_MIKI_DESKTOP_MACOS="${SELF_DIR}/dat/miki-desktop-macos.tar.xz"
 
 readonly VAL_SPACES_EXPIRY="30"
 
@@ -1835,7 +1836,9 @@ EOF
 function load_sqlite_admin_sql_file () {
   debug "${FUNCNAME[0]}" "$@"
 
-  load_sqlite_file "${VAL_ADMIN_SQL_LOCAL_FILE}" app/miki/db/db.sqlite
+  local sqlite_file="${1}"
+
+  load_sqlite_file "${VAL_ADMIN_SQL_LOCAL_FILE}" "${sqlite_file}"
 }
 
 function delete_sqlite_admin_sql_file () {
@@ -1847,10 +1850,12 @@ function delete_sqlite_admin_sql_file () {
 function reset_sqlite_admin_password () {
   debug "${FUNCNAME[0]}" "$@"
 
+  local sqlite_file="${1:-app/miki/db/db.sqlite}"
+
   if [[ -n "${OPT_DESKTOP}" && -n "${OPT_EMAIL}" ]]; then
     generate_admin_password
     create_sqlite_admin_sql_file
-    load_sqlite_admin_sql_file
+    load_sqlite_admin_sql_file "${sqlite_file}"
     delete_sqlite_admin_sql_file
   fi
 }
@@ -1862,13 +1867,17 @@ function package_desktop () {
 
   case "${OPT_DESKTOP}" in
     linux)
+      reset_sqlite_admin_password
       electron-packager . --platform=linux --out=out --icon="${icons}" --overwrite
       ;;
     windows)
+      reset_sqlite_admin_password
       electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite
       ;;
     macos)
-      electron-packager . --platform=darwin --out=out --icon="${icons}" --overwrite
+      mkdir -p out
+      tar -C out -xJf "${VAL_MIKI_DESKTOP_MACOS}"
+      reset_sqlite_admin_password "out/miki-desktop-macos/Miki Desktop.app/Contents/Resources/app/app/miki/db/db.sqlite"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1885,6 +1894,9 @@ function build_desktop () {
       ;;
     windows)
       electron-builder --windows --prepackaged "out/Miki Desktop-win32-x64"
+      ;;
+    macos)
+      zip -r "out/miki-desktop-macos.zip" "miki-desktop-macos"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1918,7 +1930,8 @@ function upload_desktop () {
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
       ;;
     macos)
-      true
+      upload_file out/*.zip "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.zip"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.zip"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1957,8 +1970,6 @@ function desktop_install () {
   delete_modules
   install_modules
   install_sqlite
-
-  reset_sqlite_admin_password
 
   package_desktop
   build_desktop
