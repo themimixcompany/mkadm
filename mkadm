@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.13.4"
+readonly VERSION="2.14.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -521,6 +521,12 @@ function delete_miki_directory () {
   [[ -d "${OPT_MIKI_DIRECTORY}" ]] && rm -rf "${OPT_MIKI_DIRECTORY}"
 }
 
+function display_banner () {
+  local message="${1}"
+
+  echo -e "# ${message}"
+}
+
 function initialize () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -672,14 +678,6 @@ function update_package_json () {
 
   cat package.json | jq ".version = \"${version}\""  | jq '.dev = false' > "${temp}"
   mv -f ${temp} package.json
-}
-
-function display_banner () {
-  local message="${1}"
-
-  echo "================================================================================"
-  echo -e " ${message}"
-  echo "================================================================================"
 }
 
 function yarn_build () {
@@ -1125,13 +1123,6 @@ EOF
 EOF
 )
 
-  local json_user=$(jq . << EOF
-{
-  "user_id": "auth0|${OPT_NAME}"
-}
-EOF
-)
-
   if [[ -z "${OPT_DESKTOP}" ]]; then
     json="${json_hosted}"
   else
@@ -1143,13 +1134,6 @@ EOF
        -H "Authorization: Bearer ${token}" \
        -H "Content-Type: application/json" \
        -d "${json}" || return 0
-
-
-  curl "https://mimix.us.auth0.com/api/v2/jobs/verification-email" \
-       -s -X POST \
-       -H "Authorization: Bearer ${token}" \
-       -H "Content-Type: application/json" \
-       -d "${json_user}" || return 0
 }
 
 function delete_auth0_user () {
@@ -1269,6 +1253,8 @@ function create_domain () {
 
 function remote_install () {
   debug "${FUNCNAME[0]}" "$@"
+
+  display_banner "Performing remote installation ..."
 
   check_droplet
 
@@ -1896,7 +1882,10 @@ function build_desktop () {
       electron-builder --windows --prepackaged "out/Miki Desktop-win32-x64"
       ;;
     macos)
-      zip -r "out/miki-desktop-macos.zip" "miki-desktop-macos"
+      (
+        cd out/miki-desktop-macos
+        zip -r ../miki-desktop-macos.zip "Miki Desktop.app"
+      )
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1963,6 +1952,8 @@ EOF
 
 function desktop_install () {
   debug "${FUNCNAME[0]}" "$@"
+
+  display_banner "Performing desktop installation ..."
 
   extract_desktop
   set_miki_version
