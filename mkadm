@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.0"
+readonly VERSION="2.15.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -577,8 +577,13 @@ function create_local_config_yml () {
 port: 3000
 
 db:
-  type: sqlite
-  storage: db/db.sqlite
+  type: postgres
+  host: localhost
+  port: 5432
+  user: ${OPT_DATABASE_USER}
+  pass: 0123456789
+  db: ${OPT_DATABASE_NAME}
+  ssl: false
 
 ssl:
   enabled: false
