@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.1"
+readonly VERSION="2.15.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -124,11 +124,11 @@ OPT_DOMAIN="streamsharing.io"
 OPT_SUBDOMAIN=
 OPT_DESKTOP=
 OPT_SQLITE_DATABASE_INIT="${SELF_DIR}/dat/miki-core.sqlite.xz"
-OPT_SPACES_BASE="nyc3.digitaloceanspaces.com"
-OPT_SPACES_SUBDOMAIN="mimixspc"
+OPT_SPACES_BASE="sfo3.digitaloceanspaces.com"
+OPT_SPACES_SUBDOMAIN="mimix"
 OPT_SPACES_URL="http://${OPT_SPACES_SUBDOMAIN}.${OPT_SPACES_BASE}"
 OPT_MIKI_DESKTOP_DIRECTORY=
-OPT_SPACES_BUCKET="s3://mimixspc"
+OPT_SPACES_BUCKET="s3://${OPT_SPACES_SUBDOMAIN}"
 OPT_DESKTOP_URL=
 
 function error () {
@@ -1858,17 +1858,17 @@ function package_desktop () {
 
   case "${OPT_DESKTOP}" in
     linux)
-      reset_sqlite_admin_password
+      #reset_sqlite_admin_password
       electron-packager . --platform=linux --out=out --icon="${icons}" --overwrite
       ;;
     windows)
-      reset_sqlite_admin_password
+      #reset_sqlite_admin_password
       electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite
       ;;
     macos)
       mkdir -p out
       tar -C out -xJf "${VAL_MIKI_DESKTOP_MACOS}"
-      reset_sqlite_admin_password "out/miki-desktop-macos/Miki Desktop.app/Contents/Resources/app/app/miki/db/db.sqlite"
+      #reset_sqlite_admin_password "out/miki-desktop-macos/Miki Desktop.app/Contents/Resources/app/app/miki/db/db.sqlite"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1965,7 +1965,7 @@ function desktop_install () {
 
   delete_modules
   install_modules
-  install_sqlite
+  #install_sqlite
 
   package_desktop
   build_desktop
