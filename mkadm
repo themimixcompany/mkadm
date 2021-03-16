@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.2"
+readonly VERSION="2.15.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -574,7 +574,7 @@ function create_local_config_yml () {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > config.yml
-port: 3000
+port: 80
 
 db:
   type: postgres
@@ -596,7 +596,7 @@ offline: false
 
 ha: false
 
-dataPath: ./data
+dataPath: C:/Users/User/AppData/Roaming/Mimix/pgsql/data
 EOF
 }
 
