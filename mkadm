@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.6"
+readonly VERSION="2.15.7"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -574,6 +574,36 @@ function create_local_config_yml () {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > config.yml
+port: 80
+
+db:
+  type: postgres
+  host: localhost
+  port: 5432
+  user: ${OPT_DATABASE_USER}
+  pass: 0123456789
+  db: ${OPT_DATABASE_NAME}
+  ssl: false
+
+ssl:
+  enabled: false
+
+bindIP: 0.0.0.0
+
+logLevel: info
+
+offline: false
+
+ha: false
+
+dataPath: ./data
+EOF
+}
+
+function create_desktop_local_config_yml () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  cat << EOF > app/miki/config.yml
 port: 80
 
 db:
@@ -1967,7 +1997,7 @@ function desktop_install () {
   install_modules
   #install_sqlite
 
-  create_local_config_yml
+  create_desktop_local_config_yml
 
   package_desktop
   build_desktop
