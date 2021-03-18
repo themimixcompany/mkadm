@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.3"
+readonly VERSION="2.15.5"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1966,6 +1966,8 @@ function desktop_install () {
   delete_modules
   install_modules
   #install_sqlite
+
+  create_local_config_yml
 
   package_desktop
   build_desktop
