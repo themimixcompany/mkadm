@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.7"
+readonly VERSION="2.15.8"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -32,13 +32,14 @@ readonly VAL_SEED_FILE="$HOME/miki-seed.tar"
 readonly VAL_JS_FILTER="${SELF_DIR}/filter.js"
 
 readonly VAL_MIKI_DESKTOP="${SELF_DIR}/dat/miki-desktop.tar.xz"
+readonly VAL_MIKI_DESKTOP_MACOS="${SELF_DIR}/dat/miki-desktop-macos.tar.xz"
+
 readonly VAL_MODULES_LINUX_MIKI="${SELF_DIR}/dat/node_modules-linux-miki.tar.xz"
 readonly VAL_MODULES_LINUX_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-linux-miki-desktop.tar.xz"
 readonly VAL_MODULES_WINDOWS_MIKI="${SELF_DIR}/dat/node_modules-windows-miki.tar.xz"
 readonly VAL_MODULES_WINDOWS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-windows-miki-desktop.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI="${SELF_DIR}/dat/node_modules-macos-miki.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-macos-miki-desktop.tar.xz"
-readonly VAL_MIKI_DESKTOP_MACOS="${SELF_DIR}/dat/miki-desktop-macos.tar.xz"
 
 readonly VAL_SPACES_EXPIRY="30"
 
