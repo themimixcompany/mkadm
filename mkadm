@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.8"
+readonly VERSION="2.15.10"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -627,7 +627,10 @@ offline: false
 
 ha: false
 
-dataPath: ./data
+dataPath: C:/Users/User/AppData/Roaming/Mimix/pgsql/data
+
+email: ${OPT_EMAIL}
+password: ${VAL_ADMIN_PASSWORD_HASH}
 EOF
 }
 
@@ -1998,6 +2001,7 @@ function desktop_install () {
   install_modules
   #install_sqlite
 
+  generate_admin_password
   create_desktop_local_config_yml
 
   package_desktop
