@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.10"
+readonly VERSION="2.15.14"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -593,7 +593,7 @@ bindIP: 0.0.0.0
 
 logLevel: info
 
-offline: false
+offline: true
 
 ha: false
 
@@ -623,11 +623,11 @@ bindIP: 0.0.0.0
 
 logLevel: info
 
-offline: false
+offline: true
 
 ha: false
 
-dataPath: C:/Users/User/AppData/Roaming/Mimix/pgsql/data
+dataPath: ./data
 
 email: ${OPT_EMAIL}
 password: ${VAL_ADMIN_PASSWORD_HASH}
@@ -681,7 +681,9 @@ function update_files () {
     ['https://github\.com/Requarks/wiki']="${VAL_MIKI_REPOSITORY}"
 
     ['Requarks']="${OPT_COMPANY_NAME^}"
-    # ['requarks\.io']="${OPT_COMPANY_DOMAIN}"
+    ['requarks\.io']="${OPT_COMPANY_DOMAIN}"
+
+    # NOTE: changing this will affect `requarks*` as a node dependency
     # ['requarks']="${OPT_COMPANY_NAME}"
   )
 
@@ -788,7 +790,7 @@ bindIP: 0.0.0.0
 
 logLevel: info
 
-offline: false
+offline: true
 
 ha: false
 
