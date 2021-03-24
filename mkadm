@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.15.14"
+readonly VERSION="2.16.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -630,6 +630,7 @@ ha: false
 dataPath: ./data
 
 email: ${OPT_EMAIL}
+
 password: ${VAL_ADMIN_PASSWORD_HASH}
 EOF
 }
@@ -1899,7 +1900,7 @@ function package_desktop () {
       ;;
     windows)
       #reset_sqlite_admin_password
-      electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite
+      electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --win32metadata.requested-execution-level=requireAdministrator
       ;;
     macos)
       mkdir -p out
