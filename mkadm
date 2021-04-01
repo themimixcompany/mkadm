@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.16.1"
+readonly VERSION="2.16.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1894,6 +1894,8 @@ function package_desktop () {
 
   local icons="assets/icons/icon.icns"
 
+  mkdir -p out
+
   case "${OPT_DESKTOP}" in
     linux)
       #reset_sqlite_admin_password
@@ -1901,10 +1903,9 @@ function package_desktop () {
       ;;
     windows)
       #reset_sqlite_admin_password
-      electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --win32metadata.requested-execution-level=requireAdministrator
+      electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --ignore="app/(pgsql|miki)"
       ;;
     macos)
-      mkdir -p out
       tar -C out -xJf "${VAL_MIKI_DESKTOP_MACOS}"
       #reset_sqlite_admin_password "out/miki-desktop-macos/Miki Desktop.app/Contents/Resources/app/app/miki/db/db.sqlite"
       ;;
@@ -1922,6 +1923,7 @@ function build_desktop () {
       electron-builder --linux --prepackaged "out/Miki Desktop-linux-x64"
       ;;
     windows)
+      cp -a "out/Miki Desktop-win32-x64" /tmp
       electron-builder --windows --prepackaged "out/Miki Desktop-win32-x64"
       ;;
     macos)
@@ -1946,6 +1948,17 @@ function upload_file () {
         put "${file}" "${OPT_SPACES_BUCKET}/${name}"
 }
 
+function sign_executable () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local sign_key=$HOME/key.pfx
+  local sign_password=$(cat $HOME/.password)
+
+  osslsigncode sign -pkcs12 ${sign_key} -pass ${sign_password} -n "Miki Desktop" \
+               -t http://tsa.starfieldtech.com -i https://mimix.io \
+               -in out/*.exe -out out/miki-desktop-1.0.0-signed.exe
+}
+
 function upload_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1958,7 +1971,7 @@ function upload_desktop () {
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.AppImage"
       ;;
     windows)
-      upload_file out/*.exe "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
+      upload_file out/*signed.exe "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
       ;;
     macos)
@@ -2010,6 +2023,9 @@ function desktop_install () {
 
   package_desktop
   build_desktop
+
+  sign_executable
+
   upload_desktop
 
   notify_auth0
