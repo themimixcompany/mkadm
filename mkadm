@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.16.2"
+readonly VERSION="2.17.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -124,7 +124,6 @@ OPT_USE_CACHE=
 OPT_DOMAIN="streamsharing.io"
 OPT_SUBDOMAIN=
 OPT_DESKTOP=
-OPT_SQLITE_DATABASE_INIT="${SELF_DIR}/dat/miki-core.sqlite.xz"
 OPT_SPACES_BASE="sfo3.digitaloceanspaces.com"
 OPT_SPACES_SUBDOMAIN="mimix"
 OPT_SPACES_URL="http://${OPT_SPACES_SUBDOMAIN}.${OPT_SPACES_BASE}"
@@ -193,7 +192,7 @@ function run_rsync () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUB:D: --longoptions help,debug,verbose,version,name:,email:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop:,sqlite-database-init: -- "$@")
+  local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUB:D: --longoptions help,debug,verbose,version,name:,email:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop: -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -266,7 +265,6 @@ function parse_arguments () {
       (--domain) OPT_DOMAIN=$2; shift 2 ;;
       (-B|--subdomain) OPT_SUBDOMAIN=$2; shift 2 ;;
       (-D|--desktop) OPT_DESKTOP=$2; shift 2 ;;
-      (--sqlite-database-init) OPT_SQLITE_DATABASE_INIT=$2; shift 2 ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -489,7 +487,6 @@ OPTIONS:
       --domain                      The top-level domain to use for the subdomains
   -B, --subdomain                   The subdomain to use on the top-level domain
   -D, --desktop <OS>                Build a desktop version for OS
-      --sqlite-database-init <PATH> The local path to the SQLite3 database to use for init
 EOF
   exit 0
 }
@@ -1831,64 +1828,6 @@ function install_modules () {
   fi
 }
 
-function install_sqlite () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  unxz -c "${OPT_SQLITE_DATABASE_INIT}" > app/miki/db/db.sqlite
-}
-
-function load_sqlite_file () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  local source_file="${1}"
-  local dest_file="${2}"
-
-  cat "${source_file}" | sqlite3 "${dest_file}"
-}
-
-function create_sqlite_admin_sql_file () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  local id=1
-  local date=$(generate_date)
-
-  VAL_ADMIN_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
-
-  cat << EOF > ${VAL_ADMIN_SQL_LOCAL_FILE}
-UPDATE users SET email = '${OPT_EMAIL}' WHERE id = '${id}';
-UPDATE users SET password = '${VAL_ADMIN_PASSWORD_HASH}' WHERE id = '${id}';
-UPDATE users SET "mustChangePwd" = 't' WHERE id = '${id}';
-UPDATE settings SET value = '{"v":"https://${VAL_DOMAIN_NAME}"}' WHERE key = 'host';
-EOF
-}
-
-function load_sqlite_admin_sql_file () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  local sqlite_file="${1}"
-
-  load_sqlite_file "${VAL_ADMIN_SQL_LOCAL_FILE}" "${sqlite_file}"
-}
-
-function delete_sqlite_admin_sql_file () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  [[ -f "${VAL_ADMIN_SQL_LOCAL_FILE}" ]] && rm -f "${VAL_ADMIN_SQL_LOCAL_FILE}"
-}
-
-function reset_sqlite_admin_password () {
-  debug "${FUNCNAME[0]}" "$@"
-
-  local sqlite_file="${1:-app/miki/db/db.sqlite}"
-
-  if [[ -n "${OPT_DESKTOP}" && -n "${OPT_EMAIL}" ]]; then
-    generate_admin_password
-    create_sqlite_admin_sql_file
-    load_sqlite_admin_sql_file "${sqlite_file}"
-    delete_sqlite_admin_sql_file
-  fi
-}
-
 function package_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1898,16 +1837,13 @@ function package_desktop () {
 
   case "${OPT_DESKTOP}" in
     linux)
-      #reset_sqlite_admin_password
       electron-packager . --platform=linux --out=out --icon="${icons}" --overwrite
       ;;
     windows)
-      #reset_sqlite_admin_password
       electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --ignore="app/(pgsql|miki)"
       ;;
     macos)
       tar -C out -xJf "${VAL_MIKI_DESKTOP_MACOS}"
-      #reset_sqlite_admin_password "out/miki-desktop-macos/Miki Desktop.app/Contents/Resources/app/app/miki/db/db.sqlite"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -2016,7 +1952,6 @@ function desktop_install () {
 
   delete_modules
   install_modules
-  #install_sqlite
 
   generate_admin_password
   create_desktop_local_config_yml
