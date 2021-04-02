@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.17.0"
+readonly VERSION="2.18.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1859,8 +1859,7 @@ function build_desktop () {
       electron-builder --linux --prepackaged "out/Miki Desktop-linux-x64"
       ;;
     windows)
-      cp -a "out/Miki Desktop-win32-x64" /tmp
-      electron-builder --windows --prepackaged "out/Miki Desktop-win32-x64"
+      makensis script.nsi
       ;;
     macos)
       (
