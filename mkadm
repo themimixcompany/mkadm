@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.18.0"
+readonly VERSION="2.19.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1840,7 +1840,7 @@ function package_desktop () {
       electron-packager . --platform=linux --out=out --icon="${icons}" --overwrite
       ;;
     windows)
-      electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --ignore="app/(pgsql|miki)"
+      electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --ignore="app/(pgsql|miki|pgdumps)"
       ;;
     macos)
       tar -C out -xJf "${VAL_MIKI_DESKTOP_MACOS}"
