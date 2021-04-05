@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.19.0"
+readonly VERSION="2.19.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1889,9 +1889,22 @@ function sign_executable () {
   local sign_key=$HOME/key.pfx
   local sign_password=$(cat $HOME/.password)
 
-  osslsigncode sign -pkcs12 ${sign_key} -pass ${sign_password} -n "Miki Desktop" \
-               -t http://tsa.starfieldtech.com -i https://mimix.io \
-               -in out/*.exe -out out/miki-desktop-1.0.0-signed.exe
+  case "${OPT_DESKTOP}" in
+    linux)
+      return 0
+    ;;
+    windows)
+      osslsigncode sign -pkcs12 ${sign_key} -pass ${sign_password} -n "Miki Desktop" \
+                   -t http://tsa.starfieldtech.com -i https://mimix.io \
+                   -in out/*.exe -out out/miki-desktop-1.0.0-signed.exe
+    ;;
+    macos)
+      return 0
+    ;;
+    *)
+      error "ERROR: The specified platform is not supported. Aborting."
+      ;;
+  esac
 }
 
 function upload_desktop () {
