@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.19.1"
+readonly VERSION="2.19.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1864,7 +1864,7 @@ function build_desktop () {
     macos)
       (
         cd out/miki-desktop-macos
-        zip -r ../miki-desktop-macos.zip "Miki Desktop.app"
+        zip -r ../"Miki Desktop.zip" "Miki Desktop.app"
       )
       ;;
     *)
@@ -1896,7 +1896,8 @@ function sign_executable () {
     windows)
       osslsigncode sign -pkcs12 ${sign_key} -pass ${sign_password} -n "Miki Desktop" \
                    -t http://tsa.starfieldtech.com -i https://mimix.io \
-                   -in out/*.exe -out out/miki-desktop-1.0.0-signed.exe
+                   -in out/*.exe -out "out/Miki Desktop.exe" && \
+        rm -f out/Miki\ Desktop\ Setup*.exe
     ;;
     macos)
       return 0
@@ -1919,7 +1920,7 @@ function upload_desktop () {
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.AppImage"
       ;;
     windows)
-      upload_file out/*signed.exe "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
+      upload_file out/*.exe "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
       ;;
     macos)
