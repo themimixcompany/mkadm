@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.19.2"
+readonly VERSION="2.19.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1920,8 +1920,8 @@ function upload_desktop () {
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.AppImage"
       ;;
     windows)
-      upload_file out/*.exe "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
-      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.exe"
+      upload_file out/*.exe "${prefix}/Miki Desktop.exe"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki Desktop Installer.exe"
       ;;
     macos)
       upload_file out/*.zip "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.zip"
