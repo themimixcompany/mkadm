@@ -1920,12 +1920,12 @@ function upload_desktop () {
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.AppImage"
       ;;
     windows)
-      upload_file out/*.exe "${prefix}/Miki Desktop.exe"
+      upload_file out/*.exe "${prefix}/Miki Desktop Installer.exe"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki Desktop Installer.exe"
       ;;
     macos)
-      upload_file out/*.zip "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.zip"
-      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.zip"
+      upload_file out/*.zip "${prefix}/Miki Desktop Installer.zip"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki Desktop Installer.zip"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
