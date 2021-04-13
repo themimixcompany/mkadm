@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.19.3"
+readonly VERSION="2.19.4"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1921,11 +1921,11 @@ function upload_desktop () {
       ;;
     windows)
       upload_file out/*.exe "${prefix}/Miki Desktop Installer.exe"
-      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki Desktop Installer.exe"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.exe"
       ;;
     macos)
       upload_file out/*.zip "${prefix}/Miki Desktop Installer.zip"
-      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki Desktop Installer.zip"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.zip"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
