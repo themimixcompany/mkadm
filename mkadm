@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.20.0"
+readonly VERSION="2.20.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -602,7 +602,7 @@ function create_desktop_local_config_yml () {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > app/miki/config.yml
-port: 50250
+port: 48000
 
 db:
   type: postgres
@@ -1028,8 +1028,6 @@ function local_build () {
 
   install_assets
   create_db_directory
-
-  # create_tarball
 }
 
 function check_droplet () {
