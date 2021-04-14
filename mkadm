@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.19.4"
+readonly VERSION="2.20.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -572,12 +572,12 @@ function create_local_config_yml () {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > config.yml
-port: 80
+port: 50250
 
 db:
   type: postgres
   host: localhost
-  port: 5432
+  port: 60750
   user: ${OPT_DATABASE_USER}
   pass: 0123456789
   db: ${OPT_DATABASE_NAME}
@@ -602,12 +602,12 @@ function create_desktop_local_config_yml () {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > app/miki/config.yml
-port: 80
+port: 50250
 
 db:
   type: postgres
   host: localhost
-  port: 5432
+  port: 60750
   user: ${OPT_DATABASE_USER}
   pass: 0123456789
   db: ${OPT_DATABASE_NAME}
