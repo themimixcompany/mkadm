@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.5.0"
+readonly VERSION="1.5.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -69,7 +69,7 @@ function parse_arguments () {
       (-e|--email) OPT_EMAIL=$2; shift 2 ;;
       (-B|--subdomain) OPT_SUBDOMAIN="${2// /}"; shift 2 ;;
       (-I|--subscription-id) OPT_SUBSCRIPTION_ID=$2; shift 2 ;;
-      (-C|--check) OPT_CHECK=true; shift ;;
+      (-C|--check) OPT_CHECK_NAME=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -80,12 +80,12 @@ function process_arguments () {
 
   if [[ -n "${OPT_HELP}"  || "${#}" -eq 0 ]]; then
     display_usage
+  elif [[ -n "${OPT_CHECK_NAME}" ]]; then
+    check_name
   elif [[ -z "${OPT_TYPE}" ]]; then
     display_usage
   elif [[ -n "${OPT_VERSION}" ]]; then
     display_version
-  elif [[ -n "${OPT_CHECK}" ]]; then
-    check_name
   else
     return 0
   fi
@@ -107,6 +107,7 @@ OPTIONS:
   -e, --email <EMAIL>          The email address of the admin account
   -B, --subdomain <SUBDOMAIN>  The subdomain to use on the top-level domain
   -I, --subscription-id <ID>   The Chargify subscription ID
+  -C, --check-name             Flag to return true if an instance already exits
 EOF
   exit 0
 }
@@ -133,7 +134,11 @@ function delete_log_file () {
 
   local logfile="/tmp/mkadm.${OPT_SUBSCRIPTION_ID}.log"
 
-  [[ -f "${logfile}" ]] && rm -f "${logfile}"
+  if [[ -f "${logfile}" ]]; then
+    rm -f "${logfile}"
+  else
+    return 0
+  fi
 }
 
 function create_screen () {
@@ -171,7 +176,6 @@ function main () {
   process_arguments "$@"
 
   delete_log_file
-
   run
 }
 
