@@ -5,12 +5,19 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.4.0"
+readonly VERSION="1.5.0"
 
 OPT_HELP=
 OPT_DEBUG=
 OPT_VERBOSE=
 OPT_VERSION=
+
+OPT_TYPE=
+OPT_NAME=
+OPT_EMAIL=
+OPT_SUBDOMAIN=
+OPT_SUBSCRIPTION_ID=
+OPT_CHECK_NAME=
 
 VAL_SCREEN_LOG_FILE=/tmp/mkadm.${RANDOM}.log
 
@@ -43,7 +50,7 @@ function debug () {
 function parse_arguments () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local opts=$(getopt -n "${SELF}" --longoptions help,debug,verbose,version -- "$@")
+  local opts=$(getopt -n "${SELF}" --options t:n:e:B:I:C --longoptions help,debug,verbose,version,type:,name:,email:,subdomain:,subscription-id:,check-name -- "$@")
 
   if [[ $? != 0 ]]; then
     error "Failed to parse arguments. Aborting."
@@ -57,6 +64,12 @@ function parse_arguments () {
       (--debug) OPT_DEBUG=true; shift ;;
       (--verbose) OPT_VERBOSE=true; shift ;;
       (--version) OPT_VERSION=true; shift ;;
+      (-t|--type) OPT_TYPE=$2; shift 2 ;;
+      (-n|--name) OPT_NAME="${2// /}"; shift 2 ;;
+      (-e|--email) OPT_EMAIL=$2; shift 2 ;;
+      (-B|--subdomain) OPT_SUBDOMAIN="${2// /}"; shift 2 ;;
+      (-I|--subscription-id) OPT_SUBSCRIPTION_ID=$2; shift 2 ;;
+      (-C|--check) OPT_CHECK=true; shift ;;
       (--) shift; break ;;
       (*) break ;;
     esac
@@ -67,8 +80,12 @@ function process_arguments () {
 
   if [[ -n "${OPT_HELP}"  || "${#}" -eq 0 ]]; then
     display_usage
+  elif [[ -z "${OPT_TYPE}" ]]; then
+    display_usage
   elif [[ -n "${OPT_VERSION}" ]]; then
     display_version
+  elif [[ -n "${OPT_CHECK}" ]]; then
+    check_name
   else
     return 0
   fi
@@ -81,14 +98,18 @@ function display_usage () {
 ${SELF} v${VERSION} [OPTIONS]...
 
 OPTIONS:
-      --help                    Show this help
-      --debug                   Enable debugging mode
-      --verbose                 Enable verbose output
-      --version                 Display program version info
+      --help                   Show this help
+      --debug                  Enable debugging mode
+      --verbose                Enable verbose output
+      --version                Display program version info
+  -t, --type <TYPE>            The type of deployment
+  -n, --name <TEXT>            The name of the instance
+  -e, --email <EMAIL>          The email address of the admin account
+  -B, --subdomain <SUBDOMAIN>  The subdomain to use on the top-level domain
+  -I, --subscription-id <ID>   The Chargify subscription ID
 EOF
   exit 0
 }
-
 
 function display_version () {
   debug "${FUNCNAME[0]}" "$@"
@@ -99,23 +120,51 @@ EOF
   exit 0
 }
 
+function check_name () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  mkadm -n "${OPT_NAME}" -C
+}
+
+function delete_log_file () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local logfile="$1"
+
+  [[ -f "${logfile}" ]] && rm -f "${logfile}"
+}
+
+function create_screen () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local logfile=$1
+  local screen_name=$2
+  shift 2
+
+  screen -L -Logfile "${logfile}" -dmS "${screen_name}" "$@"
+}
+
 function run () {
   debug "${FUNCNAME[0]}" "$@"
 
-  if [[ $# -eq 4 ]]; then
-    local name="${1// /}"
-    local email="${2}"
-    local subdomain="${3// /}"
-    local id="${4}"
-    local logfile="/tmp/mkadm.${id}.log"
+  local logfile="/tmp/mkadm.${id}.log"
 
-    [[ -f "${logfile}" ]] && rm -f "${logfile}"
+  delete_log_file "${logfile}"
 
-    screen -L -Logfile "${logfile}" -dmS "deploy.${id}" \
-           mkadm -Un "${name}" --email "${email}" --subdomain "${subdomain}" --subscription-id "${id}"
-  else
-    display_usage
-  fi
+  case "${OPT_TYPE}" in
+    hosted)
+      create_screen mkadm -U -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
+                    -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}"
+      ;;
+    desktop-windows)
+      create_screen mkadm -U -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
+                    -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}" \
+                    -D windows
+      ;;
+    *)
+      error "Deployment type ${OPT_TYPE} not found. Aborting."
+      ;;
+  esac
 }
 
 function main () {

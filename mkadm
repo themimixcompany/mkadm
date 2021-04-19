@@ -484,8 +484,8 @@ OPTIONS:
   -T, --snapshot-instance           Flag to create a tarball snapshot of an instance
       --snapshot-tarball <PATH>     The local tarball path for the instance snapshot
   -U, --use-cache                   Flag to use a prebuilt droplet snapshot for the instance
-      --domain                      The top-level domain to use for the subdomains
-  -B, --subdomain                   The subdomain to use on the top-level domain
+      --domain <DOMAIN>             The top-level domain to use for the subdomains
+  -B, --subdomain <SUBDOMAIN>       The subdomain to use on the top-level domain
   -D, --desktop <OS>                Build a desktop version for OS
 EOF
   exit 0
