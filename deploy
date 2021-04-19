@@ -124,12 +124,14 @@ function check_name () {
   debug "${FUNCNAME[0]}" "$@"
 
   mkadm -n "${OPT_NAME}" -C
+
+  exit $?
 }
 
 function delete_log_file () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local logfile="$1"
+  local logfile="/tmp/mkadm.${OPT_SUBSCRIPTION_ID}.log"
 
   [[ -f "${logfile}" ]] && rm -f "${logfile}"
 }
@@ -137,19 +139,14 @@ function delete_log_file () {
 function create_screen () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local logfile=$1
-  local screen_name=$2
-  shift 2
+  local logfile="/tmp/mkadm.${OPT_SUBSCRIPTION_ID}.log"
+  local screen_name="deploy.${OPT_SUBSCRIPTION_ID}"
 
   screen -L -Logfile "${logfile}" -dmS "${screen_name}" "$@"
 }
 
 function run () {
   debug "${FUNCNAME[0]}" "$@"
-
-  local logfile="/tmp/mkadm.${id}.log"
-
-  delete_log_file "${logfile}"
 
   case "${OPT_TYPE}" in
     hosted)
@@ -173,7 +170,9 @@ function main () {
   parse_arguments "$@"
   process_arguments "$@"
 
-  run "$@"
+  delete_log_file
+
+  run
 }
 
 main "$@"

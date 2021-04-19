@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.20.1"
+readonly VERSION="2.21.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1716,7 +1716,7 @@ function garbage_collect () {
 
   rm -rf /tmp/tmp.*.miki
   rm -rf /tmp/yarn--*
-  rm -rf /tmp/mkadm.*.log
+  #rm -rf /tmp/mkadm.*.log
   rm -rf /tmp/core-js-banners
   rm -rf /tmp/v8-compile-cache*
   rm -rf /tmp/tmp.*.miki-desktop
