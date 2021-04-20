@@ -1320,6 +1320,7 @@ function remote_install () {
 
   reset_admin_password
   start_miki_service
+
   notify_auth0
   notify_hook
   create_domain
@@ -1862,7 +1863,7 @@ function build_desktop () {
     macos)
       (
         cd out/miki-desktop-macos
-        zip -r ../"Miki Desktop.zip" "Miki Desktop.app"
+        zip -r "../Miki Desktop.zip" "Miki Desktop.app"
       )
       ;;
     *)
