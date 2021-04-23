@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.21.0"
+readonly VERSION="2.21.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -641,11 +641,12 @@ function find_id () {
   find ${path} -name "${regex}" | awk -F \. '{print $2}'
 }
 
-function copy_vue_files () {
+function copy_resource_files () {
   debug "${FUNCNAME[0]}" "$@"
 
   rsync -a "${VAL_RESOURCES_DIR}/client" .
   rsync -a "${VAL_RESOURCES_DIR}/dev" .
+  rsync -a "${VAL_RESOURCES_DIR}/server" .
 }
 
 function extract_seed () {
@@ -1021,7 +1022,7 @@ function local_build () {
     clone_locales_repository
   fi
 
-  copy_vue_files
+  copy_resource_files
   update_files
   update_package_json
   yarn_build
@@ -1842,7 +1843,7 @@ function package_desktop () {
       electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --ignore="app/(pgsql|miki|pgdumps)"
       ;;
     macos)
-      tar -C out -xJf "${VAL_MIKI_DESKTOP_MACOS}"
+      return true
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1861,10 +1862,7 @@ function build_desktop () {
       makensis script.nsi
       ;;
     macos)
-      (
-        cd out/miki-desktop-macos
-        zip -r "../Miki Desktop.zip" "Miki Desktop.app"
-      )
+      return true
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1889,17 +1887,11 @@ function sign_executable () {
   local sign_password=$(cat $HOME/.password)
 
   case "${OPT_DESKTOP}" in
-    linux)
-      return 0
-    ;;
     windows)
       osslsigncode sign -pkcs12 ${sign_key} -pass ${sign_password} -n "Miki Desktop" \
                    -t http://tsa.starfieldtech.com -i https://mimix.io \
                    -in out/*.exe -out "out/Miki Desktop.exe" && \
         rm -f out/Miki\ Desktop\ Setup*.exe
-    ;;
-    macos)
-      return 0
     ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1923,8 +1915,9 @@ function upload_desktop () {
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.exe"
       ;;
     macos)
-      upload_file out/*.zip "${prefix}/Miki Desktop Installer.zip"
-      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.zip"
+      # update location of dmg file
+      upload_file out/*.dmg "${prefix}/Miki Desktop Installer.dmg"
+      OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.dmg"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
