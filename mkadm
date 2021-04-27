@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="2.21.1"
+readonly VERSION="3.1.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -32,8 +32,6 @@ readonly VAL_SEED_FILE="$HOME/miki-seed.tar"
 readonly VAL_JS_FILTER="${SELF_DIR}/filter.js"
 
 readonly VAL_MIKI_DESKTOP="${SELF_DIR}/dat/miki-desktop.tar.xz"
-readonly VAL_MIKI_DESKTOP_MACOS="${SELF_DIR}/dat/miki-desktop-macos.tar.xz"
-
 readonly VAL_MODULES_LINUX_MIKI="${SELF_DIR}/dat/node_modules-linux-miki.tar.xz"
 readonly VAL_MODULES_LINUX_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-linux-miki-desktop.tar.xz"
 readonly VAL_MODULES_WINDOWS_MIKI="${SELF_DIR}/dat/node_modules-windows-miki.tar.xz"
@@ -1828,6 +1826,27 @@ function install_modules () {
   fi
 }
 
+function fix_dependencies () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  case "${OPT_DESKTOP}" in
+    linux)
+      return 0
+      ;;
+    windows)
+      return 0
+      ;;
+    macos)
+      rm -rf app/pgsql/linux app/pgsql/linux
+      mv app/pgsql/macos/* app/pgsql
+      rm -rf app/pgsql/macos
+      ;;
+    *)
+      error "ERROR: The specified platform is not supported. Aborting."
+      ;;
+  esac
+}
+
 function package_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1843,7 +1862,7 @@ function package_desktop () {
       electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --ignore="app/(pgsql|miki|pgdumps)"
       ;;
     macos)
-      return true
+      electron-packager . --platform=darwin --out=out --icon="${icons}" --overwrite
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1854,6 +1873,9 @@ function package_desktop () {
 function build_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
+  local mnt="/mnt/loop.${VAL_RANDOM}"
+  local dmg="out/Miki Desktop Installer.dmg"
+
   case "${OPT_DESKTOP}" in
     linux)
       electron-builder --linux --prepackaged "out/Miki Desktop-linux-x64"
@@ -1862,7 +1884,13 @@ function build_desktop () {
       makensis script.nsi
       ;;
     macos)
-      return true
+      dd if=/dev/zero of="${dmg}" bs=1M count=1300 status=progress
+      mkfs.hfsplus -v "Miki Desktop" "${dmg}"
+      sudo mkdir -p "${mnt}"
+      sudo mount -o loop "${dmg}" "${mnt}"
+      sudo rsync -avz "out/Miki Desktop-darwin-x64/Miki Desktop.app" "dmg/" "${mnt}"
+      sudo umount "${mnt}"
+      sudo rm -rf "${mnt}"
       ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
@@ -1887,12 +1915,18 @@ function sign_executable () {
   local sign_password=$(cat $HOME/.password)
 
   case "${OPT_DESKTOP}" in
+    linux)
+      return 0
+      ;;
     windows)
       osslsigncode sign -pkcs12 ${sign_key} -pass ${sign_password} -n "Miki Desktop" \
                    -t http://tsa.starfieldtech.com -i https://mimix.io \
                    -in out/*.exe -out "out/Miki Desktop.exe" && \
         rm -f out/Miki\ Desktop\ Setup*.exe
     ;;
+    macos)
+      return 0
+      ;;
     *)
       error "ERROR: The specified platform is not supported. Aborting."
       ;;
@@ -1915,7 +1949,6 @@ function upload_desktop () {
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.exe"
       ;;
     macos)
-      # update location of dmg file
       upload_file out/*.dmg "${prefix}/Miki Desktop Installer.dmg"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.dmg"
       ;;
@@ -1961,6 +1994,7 @@ function desktop_install () {
   generate_admin_password
   create_desktop_local_config_yml
 
+  fix_dependencies
   package_desktop
   build_desktop
 
