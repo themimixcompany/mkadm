@@ -159,12 +159,12 @@ function run () {
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}"
       ;;
     desktop-miki-windows|windows)
-      create_screen mkadm -U -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
+      create_screen mkadm -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}" \
                     -D windows
       ;;
     desktop-miki-macos|macos)
-      create_screen mkadm -U -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
+      create_screen mkadm -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}" \
                     -D macos
       ;;
