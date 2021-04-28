@@ -1891,7 +1891,7 @@ function build_desktop () {
       mkfs.hfsplus -v "Miki Desktop" "${dmg}"
       sudo mkdir -p "${mnt}"
       sudo mount -o loop "${dmg}" "${mnt}"
-      sudo rsync -avz "out/Miki Desktop-darwin-x64/Miki Desktop.app" "dmg/" "${mnt}"
+      sudo rsync -a "out/Miki Desktop-darwin-x64/Miki Desktop.app" "dmg/" "${mnt}"
       sudo umount "${mnt}"
       sudo rm -rf "${mnt}"
       ;;
