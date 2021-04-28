@@ -1907,11 +1907,10 @@ function upload_file () {
   local file="$1"
   local name="$2"
 
-  s3cmd -P --expiry-days "${VAL_SPACES_EXPIRY}" \
-        put "${file}" "${OPT_SPACES_BUCKET}/${name}"
+  s3cmd -P --expiry-days "${VAL_SPACES_EXPIRY}" put "${file}" "${OPT_SPACES_BUCKET}/${name}"
 }
 
-function sign_executable () {
+function sign_installer () {
   debug "${FUNCNAME[0]}" "$@"
 
   case "${OPT_DESKTOP}" in
@@ -1998,7 +1997,7 @@ function desktop_install () {
   package_desktop
   build_desktop
 
-  sign_executable
+  sign_installer
 
   upload_desktop
 
