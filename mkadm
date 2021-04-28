@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="3.1.1"
+readonly VERSION="3.1.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -28,7 +28,12 @@ readonly VAL_MIKI_LOCALES_REPOSITORY="https://github.com/themimixcompany/wiki-lo
 readonly VAL_HOOK_URL="http://hook"
 readonly VAL_CHARGIFY_USERNAME="jm6xz1asP3UlyizRoeC7UbeXsJ90x0wbY2bwOOg34"
 readonly VAL_SNAPSHOT_ID="74983549"
-readonly VAL_SEED_FILE="$HOME/miki-seed.tar"
+
+readonly VAL_SEED_FILE="${HOME}/.mimix/miki/seed.tar"
+readonly VAL_AUTH0_FILE="${HOME}/.mimix/miki/auth0.json"
+readonly VAL_SIGN_KEY="${HOME}/.mimix/miki/key.pfx"
+readonly VAL_SIGN_PASSWORD="$(cat ${HOME}/.mimix/miki/key.password)"
+
 readonly VAL_JS_FILTER="${SELF_DIR}/filter.js"
 
 readonly VAL_MIKI_DESKTOP="${SELF_DIR}/dat/miki-desktop.tar.xz"
@@ -1110,12 +1115,10 @@ function get_chargify_metadata () {
 function get_auth0_token () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local auth0_file=$HOME/.auth0.json
-
   curl "https://mimix.us.auth0.com/oauth/token" \
        -s -X POST \
        -H 'content-type: application/json' \
-       -d @"${auth0_file}" | jq -r '.access_token'
+       -d @"${VAL_AUTH0_FILE}" | jq -r '.access_token'
 }
 
 function notify_auth0 () {
@@ -1911,15 +1914,12 @@ function upload_file () {
 function sign_executable () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local sign_key=$HOME/key.pfx
-  local sign_password=$(cat $HOME/.password)
-
   case "${OPT_DESKTOP}" in
     linux)
       return 0
       ;;
     windows)
-      osslsigncode sign -pkcs12 ${sign_key} -pass ${sign_password} -n "Miki Desktop" \
+      osslsigncode sign -pkcs12 ${VAL_SIGN_KEY} -pass ${VAL_SIGN_PASSWORD} -n "Miki Desktop" \
                    -t http://tsa.starfieldtech.com -i https://mimix.io \
                    -in out/*.exe -out "out/Miki Desktop.exe" && \
         rm -f out/Miki\ Desktop\ Setup*.exe
@@ -1936,7 +1936,7 @@ function sign_executable () {
 function upload_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
-  local hash=$(echo ${OPT_SUBSCRIPTION_ID}${OPT_SUBDOMAIN} | sha256sum | awk '{print $1}')
+  local hash=$(echo ${OPT_NAME}${OPT_SUBSCRIPTION_ID}${OPT_SUBDOMAIN}${OPT_DESKTOP} | sha256sum | awk '{print $1}')
   local prefix="miki-desktop/${hash}"
 
   case "${OPT_DESKTOP}" in
