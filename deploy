@@ -154,21 +154,21 @@ function run () {
   debug "${FUNCNAME[0]}" "$@"
 
   case "${OPT_TYPE}" in
-    hosted-miki|hosted)
+    (hosted-miki|hosted)
       create_screen mkadm -U -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}"
       ;;
-    desktop-miki-windows|windows)
+    (desktop-miki-windows|windows)
       create_screen mkadm -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}" \
                     -D windows
       ;;
-    desktop-miki-macos|macos)
+    (desktop-miki-macos|macos)
       create_screen mkadm -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}" \
                     -D macos
       ;;
-    *)
+    (*)
       error "Deployment type ${OPT_TYPE} not found. Aborting."
       ;;
   esac

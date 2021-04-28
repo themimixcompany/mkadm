@@ -1810,19 +1810,19 @@ function install_modules () {
 
   if [[ -n "${OPT_DESKTOP}" ]]; then
     case "${OPT_DESKTOP}" in
-      linux)
+      (linux)
         tar -C app/miki -xJf "${VAL_MODULES_LINUX_MIKI}"
         tar -xf "${VAL_MODULES_LINUX_MIKI_DESKTOP}"
       ;;
-      windows)
+      (windows)
         tar -C app/miki -xJf "${VAL_MODULES_WINDOWS_MIKI}"
         tar -xf "${VAL_MODULES_WINDOWS_MIKI_DESKTOP}"
         ;;
-      macos)
+      (macos)
         tar -C app/miki -xJf "${VAL_MODULES_MACOS_MIKI}"
         tar -xf "${VAL_MODULES_MACOS_MIKI_DESKTOP}"
         ;;
-      *)
+      (*)
         error "ERROR: The specified platform does not exist. Aborting."
         ;;
     esac
@@ -1833,18 +1833,18 @@ function fix_dependencies () {
   debug "${FUNCNAME[0]}" "$@"
 
   case "${OPT_DESKTOP}" in
-    linux)
+    (linux)
       return 0
       ;;
-    windows)
+    (windows)
       return 0
       ;;
-    macos)
+    (macos)
       rm -rf app/pgsql/linux app/pgsql/linux
       mv app/pgsql/macos/* app/pgsql
       rm -rf app/pgsql/macos
       ;;
-    *)
+    (*)
       error "ERROR: The specified platform is not supported. Aborting."
       ;;
   esac
@@ -1858,16 +1858,16 @@ function package_desktop () {
   mkdir -p out
 
   case "${OPT_DESKTOP}" in
-    linux)
+    (linux)
       electron-packager . --platform=linux --out=out --icon="${icons}" --overwrite
       ;;
-    windows)
+    (windows)
       electron-packager . --platform=win32 --out=out --icon="${icons}" --overwrite --ignore="(app/(pgsql|miki|pgdumps)|dmg)"
       ;;
-    macos)
+    (macos)
       electron-packager . --platform=darwin --out=out --icon="${icons}" --overwrite --ignore="(app/pgsql/windows|dmg)"
       ;;
-    *)
+    (*)
       error "ERROR: The specified platform is not supported. Aborting."
       ;;
   esac
@@ -1880,13 +1880,13 @@ function build_desktop () {
   local dmg="out/Miki Desktop Installer.dmg"
 
   case "${OPT_DESKTOP}" in
-    linux)
+    (linux)
       electron-builder --linux --prepackaged "out/Miki Desktop-linux-x64"
       ;;
-    windows)
+    (windows)
       makensis script.nsi
       ;;
-    macos)
+    (macos)
       dd if=/dev/zero of="${dmg}" bs=1M count=1300 status=progress
       mkfs.hfsplus -v "Miki Desktop" "${dmg}"
       sudo mkdir -p "${mnt}"
@@ -1895,7 +1895,7 @@ function build_desktop () {
       sudo umount "${mnt}"
       sudo rm -rf "${mnt}"
       ;;
-    *)
+    (*)
       error "ERROR: The specified platform is not supported. Aborting."
       ;;
   esac
@@ -1915,19 +1915,19 @@ function sign_executable () {
   debug "${FUNCNAME[0]}" "$@"
 
   case "${OPT_DESKTOP}" in
-    linux)
+    (linux)
       return 0
       ;;
-    windows)
+    (windows)
       osslsigncode sign -pkcs12 ${VAL_SIGN_KEY} -pass ${VAL_SIGN_PASSWORD} -n "Miki Desktop" \
                    -t http://tsa.starfieldtech.com -i https://mimix.io \
                    -in out/*.exe -out "out/Miki Desktop.exe" && \
         rm -f out/Miki\ Desktop\ Setup*.exe
     ;;
-    macos)
+    (macos)
       return 0
       ;;
-    *)
+    (*)
       error "ERROR: The specified platform is not supported. Aborting."
       ;;
   esac
@@ -1940,19 +1940,19 @@ function upload_desktop () {
   local prefix="miki-desktop/${hash}"
 
   case "${OPT_DESKTOP}" in
-    linux)
+    (linux)
       upload_file out/*.AppImage "${prefix}/miki-desktop-${VAL_MIKI_VERSION}.AppImage"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/miki-desktop-${VAL_MIKI_VERSION}.AppImage"
       ;;
-    windows)
+    (windows)
       upload_file out/*.exe "${prefix}/Miki Desktop Installer.exe"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.exe"
       ;;
-    macos)
+    (macos)
       upload_file out/*.dmg "${prefix}/Miki Desktop Installer.dmg"
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.dmg"
       ;;
-    *)
+    (*)
       error "ERROR: The specified platform is not supported. Aborting."
       ;;
   esac
