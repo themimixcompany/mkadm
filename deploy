@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="1.5.1"
+readonly VERSION="1.5.2"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -154,16 +154,16 @@ function run () {
   debug "${FUNCNAME[0]}" "$@"
 
   case "${OPT_TYPE}" in
-    (hosted-miki|hosted)
+    (hosted)
       create_screen mkadm -U -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}"
       ;;
-    (desktop-miki-windows|windows)
+    (windows)
       create_screen mkadm -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}" \
                     -D windows
       ;;
-    (desktop-miki-macos|macos)
+    (macos)
       create_screen mkadm -n "${OPT_NAME}" -e "${OPT_EMAIL}" \
                     -B "${OPT_SUBDOMAIN}" -I "${OPT_SUBSCRIPTION_ID}" \
                     -D macos
