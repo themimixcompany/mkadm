@@ -7,10 +7,14 @@ README
   - This file is used for initializing a Postgres instance.
   - This file must be available for for _mkadm_ and _Miki Desktop_.
   - The version for _Miki Desktop_ must be uncompressed.
+- miki-core.sqlite.xz
+  - The same as above but for SQLite.
 - miki-desktop.tar.xz
   - The tarball used for creating a _Miki Desktop_ installation.
   - This file is generated from _Miki Desktop_ via make.
   - This file must be generated everytime _Miki Desktop_ is updated.
+- miki-desktop-macos.tar.xz
+  - The base as above but for macOS.
 - node_modules-<OS>-miki-desktop.tar.xz
   - The `node_modules` directory of Miki Desktop for operating system <OS>.
 - node_modules-<OS>-miki.tar.xz
