@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="3.1.2"
+readonly VERSION="3.1.3"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -37,12 +37,20 @@ readonly VAL_SIGN_PASSWORD="$(cat ${HOME}/.mimix/miki/key.password)"
 readonly VAL_JS_FILTER="${SELF_DIR}/filter.js"
 
 readonly VAL_MIKI_DESKTOP="${SELF_DIR}/dat/miki-desktop.tar.xz"
+
 readonly VAL_MODULES_LINUX_MIKI="${SELF_DIR}/dat/node_modules-linux-miki.tar.xz"
 readonly VAL_MODULES_LINUX_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-linux-miki-desktop.tar.xz"
 readonly VAL_MODULES_WINDOWS_MIKI="${SELF_DIR}/dat/node_modules-windows-miki.tar.xz"
 readonly VAL_MODULES_WINDOWS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-windows-miki-desktop.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI="${SELF_DIR}/dat/node_modules-macos-miki.tar.xz"
 readonly VAL_MODULES_MACOS_MIKI_DESKTOP="${SELF_DIR}/dat/node_modules-macos-miki-desktop.tar.xz"
+
+readonly VAL_PROD_MODULES_LINUX_MIKI="${SELF_DIR}/dat/prod-node_modules-linux-miki.tar.xz"
+readonly VAL_PROD_MODULES_LINUX_MIKI_DESKTOP="${SELF_DIR}/dat/prod-node_modules-linux-miki-desktop.tar.xz"
+readonly VAL_PROD_MODULES_WINDOWS_MIKI="${SELF_DIR}/dat/prod-node_modules-windows-miki.tar.xz"
+readonly VAL_PROD_MODULES_WINDOWS_MIKI_DESKTOP="${SELF_DIR}/dat/prod-node_modules-windows-miki-desktop.tar.xz"
+readonly VAL_PROD_MODULES_MACOS_MIKI="${SELF_DIR}/dat/prod-node_modules-macos-miki.tar.xz"
+readonly VAL_PROD_MODULES_MACOS_MIKI_DESKTOP="${SELF_DIR}/dat/prod-node_modules-macos-miki-desktop.tar.xz"
 
 readonly VAL_SPACES_EXPIRY="30"
 
@@ -1873,6 +1881,37 @@ function package_desktop () {
   esac
 }
 
+function delete_modules () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  rm -rf app/miki/node_modules
+  rm -rf node_modules
+}
+
+function install_production_modules () {
+  debug "${FUNCNAME[0]}" "$@"
+
+  if [[ -n "${OPT_DESKTOP}" ]]; then
+    case "${OPT_DESKTOP}" in
+      (linux)
+        tar -C app/miki -xJf "${VAL_PROD_MODULES_LINUX_MIKI}"
+        tar -xf "${VAL_PROD_MODULES_LINUX_MIKI_DESKTOP}"
+      ;;
+      (windows)
+        tar -C app/miki -xJf "${VAL_PROD_MODULES_WINDOWS_MIKI}"
+        tar -xf "${VAL_PROD_MODULES_WINDOWS_MIKI_DESKTOP}"
+        ;;
+      (macos)
+        tar -C app/miki -xJf "${VAL_PROD_MODULES_MACOS_MIKI}"
+        tar -xf "${VAL_PROD_MODULES_MACOS_MIKI_DESKTOP}"
+        ;;
+      (*)
+        error "ERROR: The specified platform does not exist. Aborting."
+        ;;
+    esac
+  fi
+}
+
 function build_desktop () {
   debug "${FUNCNAME[0]}" "$@"
 
@@ -1887,7 +1926,7 @@ function build_desktop () {
       makensis script.nsi
       ;;
     (macos)
-      dd if=/dev/zero of="${dmg}" bs=1M count=1300 status=progress
+      dd if=/dev/zero of="${dmg}" bs=1M count=1100 status=progress
       mkfs.hfsplus -v "Miki Desktop" "${dmg}"
       sudo mkdir -p "${mnt}"
       sudo mount -o loop "${dmg}" "${mnt}"
@@ -1995,6 +2034,9 @@ function desktop_install () {
 
   fix_dependencies
   package_desktop
+
+  delete_modules
+  install_production_modules
   build_desktop
 
   sign_installer
