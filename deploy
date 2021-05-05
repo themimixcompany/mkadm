@@ -21,7 +21,7 @@ OPT_CHECK_NAME=
 
 VAL_SCREEN_LOG_FILE=/tmp/mkadm.${RANDOM}.log
 
-function error () {
+function error {
   if [[ "${OS}" == "Darwin" ]]; then
     echo "ERROR: ${@}" >&2
   else
@@ -31,7 +31,7 @@ function error () {
   exit 1
 }
 
-function warn () {
+function warn {
   if [[ "${OS}" == "Darwin" ]]; then
     echo "WARNING: ${@}" >&2
   else
@@ -39,7 +39,7 @@ function warn () {
   fi
 }
 
-function debug () {
+function debug {
   if [[ -n "${OPT_DEBUG}" ]]; then
     echo -n "** "
     echo "\${PWD}: ${PWD}"
@@ -47,7 +47,7 @@ function debug () {
   fi
 }
 
-function parse_arguments () {
+function parse_arguments {
   debug "${FUNCNAME[0]}" "$@"
 
   local opts=$(getopt -n "${SELF}" --options t:n:e:B:I:C --longoptions help,debug,verbose,version,type:,name:,email:,subdomain:,subscription-id:,check-name -- "$@")
@@ -75,7 +75,7 @@ function parse_arguments () {
     esac
   done
 }
-function process_arguments () {
+function process_arguments {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_HELP}"  || "${#}" -eq 0 ]]; then
@@ -91,7 +91,7 @@ function process_arguments () {
   fi
 }
 
-function display_usage () {
+function display_usage {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF
@@ -112,7 +112,7 @@ EOF
   exit 0
 }
 
-function display_version () {
+function display_version {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF
@@ -121,7 +121,7 @@ EOF
   exit 0
 }
 
-function check_name () {
+function check_name {
   debug "${FUNCNAME[0]}" "$@"
 
   mkadm -n "${OPT_NAME}" -C
@@ -129,7 +129,7 @@ function check_name () {
   exit $?
 }
 
-function delete_log_file () {
+function delete_log_file {
   debug "${FUNCNAME[0]}" "$@"
 
   local logfile="/tmp/mkadm.${OPT_SUBSCRIPTION_ID}.log"
@@ -141,7 +141,7 @@ function delete_log_file () {
   fi
 }
 
-function create_screen () {
+function create_screen {
   debug "${FUNCNAME[0]}" "$@"
 
   local logfile="/tmp/mkadm.${OPT_SUBSCRIPTION_ID}.log"
@@ -150,7 +150,7 @@ function create_screen () {
   screen -L -Logfile "${logfile}" -dmS "${screen_name}" "$@"
 }
 
-function run () {
+function run {
   debug "${FUNCNAME[0]}" "$@"
 
   case "${OPT_TYPE}" in
@@ -174,7 +174,7 @@ function run () {
   esac
 }
 
-function main () {
+function main {
   debug "${FUNCNAME[0]}" "$@"
 
   parse_arguments "$@"

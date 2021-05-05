@@ -142,7 +142,7 @@ OPT_MIKI_DESKTOP_DIRECTORY=
 OPT_SPACES_BUCKET="s3://${OPT_SPACES_SUBDOMAIN}"
 OPT_DESKTOP_URL=
 
-function error () {
+function error {
   if [[ "${OS}" == "Darwin" ]]; then
     echo "ERROR: ${@}" >&2
   else
@@ -152,7 +152,7 @@ function error () {
   exit 1
 }
 
-function warning () {
+function warning {
   if [[ "${OS}" == "Darwin" ]]; then
     echo "WARNING: ${@}" >&2
   else
@@ -160,7 +160,7 @@ function warning () {
   fi
 }
 
-function debug () {
+function debug {
   if [[ -n "${OPT_DEBUG}" ]]; then
     echo -n "** "
     echo "\${PWD}: ${PWD}"
@@ -168,31 +168,31 @@ function debug () {
   fi
 }
 
-function push () {
+function push {
   debug "${FUNCNAME[0]}" "$@"
 
   pushd "${1}" &> /dev/null
 }
 
-function pop () {
+function pop {
   debug "${FUNCNAME[0]}" "$@"
 
   popd &> /dev/null
 }
 
-function run_ssh () {
+function run_ssh {
   debug "${FUNCNAME[0]}" "$@"
 
   ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR "$@"
 }
 
-function run_scp () {
+function run_scp {
   debug "${FUNCNAME[0]}" "$@"
 
   scp -c aes256-gcm@openssh.com -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR "$@"
 }
 
-function run_rsync () {
+function run_rsync {
   debug "${FUNCNAME[0]}" "$@"
 
   rsync -avzL --delete \
@@ -200,7 +200,7 @@ function run_rsync () {
         "$@"
 }
 
-function parse_arguments () {
+function parse_arguments {
   debug "${FUNCNAME[0]}" "$@"
 
   local opts=$(getopt -n "${SELF}" --options n:e:p:iKk:A:P:fH:Y:y:lsc:SF:xXrtCGN:I:RTUB:D: --longoptions help,debug,verbose,version,name:,email:,wiki-name:,wiki-domain:,wiki-resources:,company-name:,company-domain:,enable-wiki-ssl,enable-db-ssl,install-path:,pgadm-path:,package-version:,install-remotely,remove-self-ssh-key,ssh-keys:,droplet-name:,database-name:,database-user:,database-init:,no-database-init,firewall-name:,add-self-address,firewall-addresses:,firewall-ports:,create-firewall,host:,send-filter:,query-filter:,config-enable-ssl,config-disable-ssl,config-domain-name:,list-instances,list,command:,ssh,sql,sql-file:,expunge-instance,force-expunge-instance,reset-admin-password,create-support-account,power-on,power-off,restore-database:,dump-database:,restart-miki,restart-machine,origin-path:,destination-path:,check-name,garbage-collect,new-name:,subscription-id:,data:,delete-auth0-user,replace-instance,replace-tarball:,snapshot-instance,snapshot-tarball:,use-cache,domain:,subdomain:,desktop: -- "$@")
@@ -282,37 +282,37 @@ function parse_arguments () {
   done
 }
 
-function get_droplet_id () {
+function get_droplet_id {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -Ld | awk "/[0-9]+\s+${1}\s+/" | awk '{print $1}'
 }
 
-function get_droplet_name () {
+function get_droplet_name {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -Ld | awk "/[0-9]+\s+${1}\s+/" | awk '{print $2}'
 }
 
-function get_droplet_address () {
+function get_droplet_address {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -Ld | awk "/[0-9]+\s+${1}\s+/" | awk '{print $3}'
 }
 
-function make_miki_www_name () {
+function make_miki_www_name {
   debug "${FUNCNAME[0]}" "$@"
 
   echo "${VAL_BASE_NAME}-${OPT_NAME}"
 }
 
-function make_miki_fw_name () {
+function make_miki_fw_name {
   debug "${FUNCNAME[0]}" "$@"
 
   echo "${VAL_BASE_NAME}-${OPT_NAME}-${VAL_FW_NAME}"
 }
 
-function set_domain_name () {
+function set_domain_name {
   debug "${FUNCNAME[0]}" "$@"
 
   local metadata="$(get_chargify_metadata)"
@@ -330,7 +330,7 @@ function set_domain_name () {
   fi
 }
 
-function set_droplet_name () {
+function set_droplet_name {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_DROPLET_NAME}" ]]; then
@@ -342,7 +342,7 @@ function set_droplet_name () {
   fi
 }
 
-function set_firewall_name () {
+function set_firewall_name {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_FIREWALL_NAME}" ]]; then
@@ -354,7 +354,7 @@ function set_firewall_name () {
   fi
 }
 
-function set_component_names () {
+function set_component_names {
   debug "${FUNCNAME[0]}" "$@"
 
   set_domain_name
@@ -362,7 +362,7 @@ function set_component_names () {
   set_firewall_name
 }
 
-function process_arguments () {
+function process_arguments {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_HELP}" || "${#}" -lt 1 ]]; then
@@ -429,7 +429,7 @@ function process_arguments () {
   fi
 }
 
-function display_usage () {
+function display_usage {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF
@@ -503,7 +503,7 @@ EOF
 }
 
 
-function display_version () {
+function display_version {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF
@@ -512,31 +512,31 @@ EOF
   exit 0
 }
 
-function create_miki_directory () {
+function create_miki_directory {
   debug "${FUNCNAME[0]}" "$@"
 
   OPT_MIKI_DIRECTORY="$(mktemp -d --suffix .miki)/miki"
 }
 
-function clone_miki_repository () {
+function clone_miki_repository {
   debug "${FUNCNAME[0]}" "$@"
 
   git clone "${VAL_MIKI_REPOSITORY}" "${OPT_MIKI_DIRECTORY}"
 }
 
-function delete_miki_directory () {
+function delete_miki_directory {
   debug "${FUNCNAME[0]}" "$@"
 
   [[ -d "${OPT_MIKI_DIRECTORY}" ]] && rm -rf "${OPT_MIKI_DIRECTORY}"
 }
 
-function display_banner () {
+function display_banner {
   local message="${1}"
 
   echo -e "# ${message}"
 }
 
-function initialize () {
+function initialize {
   debug "${FUNCNAME[0]}" "$@"
 
   display_banner "Performing initialization ..."
@@ -552,26 +552,26 @@ function initialize () {
   fi
 }
 
-function reset_repository () {
+function reset_repository {
   debug "${FUNCNAME[0]}" "$@"
 
   git reset --hard "${VAL_BASE_COMMIT}" &> /dev/null
 }
 
-function npm_install () {
+function npm_install {
   debug "${FUNCNAME[0]}" "$@"
 
   npm install
 }
 
-function delete_files () {
+function delete_files {
   debug "${FUNCNAME[0]}" "$@"
 
   rm -rf db
   rm -rf data
 }
 
-function create_readme () {
+function create_readme {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > README.md
@@ -579,7 +579,7 @@ function create_readme () {
 EOF
 }
 
-function create_local_config_yml () {
+function create_local_config_yml {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > config.yml
@@ -609,7 +609,7 @@ dataPath: ./data
 EOF
 }
 
-function create_desktop_local_config_yml () {
+function create_desktop_local_config_yml {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > app/miki/config.yml
@@ -643,7 +643,7 @@ password: ${VAL_ADMIN_PASSWORD_HASH}
 EOF
 }
 
-function find_id () {
+function find_id {
   debug "${FUNCNAME[0]}" "$@"
 
   local path=$1
@@ -652,7 +652,7 @@ function find_id () {
   find ${path} -name "${regex}" | awk -F \. '{print $2}'
 }
 
-function copy_resource_files () {
+function copy_resource_files {
   debug "${FUNCNAME[0]}" "$@"
 
   rsync -a "${VAL_RESOURCES_DIR}/client" .
@@ -660,7 +660,7 @@ function copy_resource_files () {
   rsync -a "${VAL_RESOURCES_DIR}/server" .
 }
 
-function extract_seed () {
+function extract_seed {
   debug "${FUNCNAME[0]}" "$@"
 
   display_banner "Extracting seed ..."
@@ -671,7 +671,7 @@ function extract_seed () {
   push "${OPT_MIKI_DIRECTORY}"
 }
 
-function update_files () {
+function update_files {
   debug "${FUNCNAME[0]}" "$@"
 
   declare -A SUBSTITUTIONS=(
@@ -714,14 +714,14 @@ function update_files () {
   fi
 }
 
-function clone_locales_repository () {
+function clone_locales_repository {
   debug "${FUNCNAME[0]}" "$@"
 
   mkdir -p data
   git clone "${VAL_MIKI_LOCALES_REPOSITORY}" "data/sideload"
 }
 
-function update_package_json () {
+function update_package_json {
   debug "${FUNCNAME[0]}" "$@"
 
   local temp=$(mktemp)
@@ -731,14 +731,14 @@ function update_package_json () {
   mv -f ${temp} package.json
 }
 
-function yarn_build () {
+function yarn_build {
   debug "${FUNCNAME[0]}" "$@"
 
   display_banner "Compiling sources ..."
   GENERATE_SOURCEMAP=false yarn build
 }
 
-function install_assets () {
+function install_assets {
   debug "${FUNCNAME[0]}" "$@"
 
   rsync -a ${VAL_RESOURCES_DIR}/assets/favicon.ico assets
@@ -749,19 +749,19 @@ function install_assets () {
   rsync -a ${VAL_RESOURCES_DIR}/assets/css assets
 }
 
-function create_db_directory () {
+function create_db_directory {
   debug "${FUNCNAME[0]}" "$@"
 
   mkdir -p db
 }
 
-function create_password () {
+function create_password {
   debug "${FUNCNAME[0]}" "$@"
 
   < /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c ${1:-32}
 }
 
-function create_password_file () {
+function create_password_file {
   debug "${FUNCNAME[0]}" "$@"
 
   VAL_PASSWORD_FILE=$(mktemp)
@@ -769,7 +769,7 @@ function create_password_file () {
   echo $(create_password) > "${VAL_PASSWORD_FILE}"
 }
 
-function create_remote_config_yml () {
+function create_remote_config_yml {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > config.yml
@@ -808,13 +808,13 @@ dataPath: ./data
 EOF
 }
 
-function delete_password_file () {
+function delete_password_file {
   debug "${FUNCNAME[0]}" "$@"
 
   rm -f "${VAL_PASSWORD_FILE}"
 }
 
-function create_init_sql () {
+function create_init_sql {
   debug "${FUNCNAME[0]}" "$@"
 
   mkdir -p sql
@@ -825,14 +825,14 @@ GRANT ALL PRIVILEGES ON DATABASE ${OPT_DATABASE_NAME} TO ${OPT_DATABASE_USER};
 EOF
 }
 
-function copy_bin () {
+function copy_bin {
   debug "${FUNCNAME[0]}" "$@"
 
   rm -rf bin
   rsync -aL "${SELF_DIR}/bin" .
 }
 
-function create_tarball () {
+function create_tarball {
   debug "${FUNCNAME[0]}" "$@"
 
   local file="$(basename ${OPT_MIKI_DIRECTORY}).${VAL_RANDOM}.tar.gz"
@@ -847,7 +847,7 @@ function create_tarball () {
   fi
 }
 
-function self_ssh_key () {
+function self_ssh_key {
   debug "${FUNCNAME[0]}" "$@"
 
   local key_file=
@@ -863,7 +863,7 @@ function self_ssh_key () {
   fi
 }
 
-function set_ssh_keys () {
+function set_ssh_keys {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -z "${OPT_REMOVE_SELF_SSH_KEY}" ]]; then
@@ -877,7 +877,7 @@ function set_ssh_keys () {
   fi
 }
 
-function create_droplet () {
+function create_droplet {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_INSTALL_PATH}" && -n "${VAL_DROPLET_NAME}" ]]; then
@@ -893,7 +893,7 @@ function create_droplet () {
   fi
 }
 
-function is_droplet_ready () {
+function is_droplet_ready {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${VAL_DROPLET_NAME}" && -n "${OPT_DROPLET_ADDRESS}" ]]; then
@@ -903,7 +903,7 @@ function is_droplet_ready () {
   fi
 }
 
-function upload_tarball () {
+function upload_tarball {
   debug "${FUNCNAME[0]}" "$@"
 
   local file="$(basename ${OPT_MIKI_DIRECTORY}).${VAL_RANDOM}.tar.gz"
@@ -916,7 +916,7 @@ function upload_tarball () {
   fi
 }
 
-function delete_tarball () {
+function delete_tarball {
   debug "${FUNCNAME[0]}" "$@"
 
   local directory="$(dirname ${OPT_MIKI_DIRECTORY})"
@@ -925,7 +925,7 @@ function delete_tarball () {
   rm -f "$(basename ${OPT_MIKI_DIRECTORY}).${VAL_RANDOM}.tar.gz"
 }
 
-function upload_database_init () {
+function upload_database_init {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -935,7 +935,7 @@ function upload_database_init () {
   fi
 }
 
-function upload_pgadm () {
+function upload_pgadm {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -945,7 +945,7 @@ function upload_pgadm () {
   fi
 }
 
-function upload_pgsql () {
+function upload_pgsql {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -955,7 +955,7 @@ function upload_pgsql () {
   fi
 }
 
-function install_miki () {
+function install_miki {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -982,7 +982,7 @@ function install_miki () {
   return 0
 }
 
-function create_firewall () {
+function create_firewall {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${VAL_FIREWALL_NAME}" ]]; then
@@ -991,7 +991,7 @@ function create_firewall () {
   fi
 }
 
-function display_greeting () {
+function display_greeting {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > /dev/stdout
@@ -1008,7 +1008,7 @@ Password: ${VAL_ADMIN_PASSWORD}
 EOF
 }
 
-function is_local_build () {
+function is_local_build {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -z "${OPT_INSTALL_REMOTELY}" ]]; then
@@ -1018,7 +1018,7 @@ function is_local_build () {
   fi
 }
 
-function local_build () {
+function local_build {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_USE_CACHE}" ]]; then
@@ -1042,7 +1042,7 @@ function local_build () {
   create_db_directory
 }
 
-function check_droplet () {
+function check_droplet {
   debug "${FUNCNAME[0]}" "$@"
 
   local droplet=$(get_droplet_name ${VAL_DROPLET_NAME})
@@ -1054,7 +1054,7 @@ function check_droplet () {
   fi
 }
 
-function start_miki_service () {
+function start_miki_service {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1062,7 +1062,7 @@ function start_miki_service () {
   run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl start miki.service"
 }
 
-function restart_miki_service () {
+function restart_miki_service {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1070,7 +1070,7 @@ function restart_miki_service () {
   run_ssh "${OPT_DROPLET_USER}@${address}" "systemctl restart miki.service"
 }
 
-function notify_chargify () {
+function notify_chargify {
   debug "${FUNCNAME[0]}" "$@"
 
   local json=$(jq . << EOF
@@ -1094,7 +1094,7 @@ EOF
   fi
 }
 
-function filter_js () {
+function filter_js {
   debug "${FUNCNAME[0]}" "$@"
 
   local value="$1"
@@ -1106,7 +1106,7 @@ function filter_js () {
   fi
 }
 
-function get_chargify_metadata () {
+function get_chargify_metadata {
   debug "${FUNCNAME[0]}" "$@"
 
   local val=
@@ -1120,7 +1120,7 @@ function get_chargify_metadata () {
   fi
 }
 
-function get_auth0_token () {
+function get_auth0_token {
   debug "${FUNCNAME[0]}" "$@"
 
   curl "https://mimix.us.auth0.com/oauth/token" \
@@ -1129,7 +1129,7 @@ function get_auth0_token () {
        -d @"${VAL_AUTH0_FILE}" | jq -r '.access_token'
 }
 
-function notify_auth0 () {
+function notify_auth0 {
   debug "${FUNCNAME[0]}" "$@"
 
   local token=$(get_auth0_token)
@@ -1183,7 +1183,7 @@ EOF
        -d "${json}" || return 0
 }
 
-function delete_auth0_user () {
+function delete_auth0_user {
   debug "${FUNCNAME[0]}" "$@"
 
   local token=$(get_auth0_token)
@@ -1197,7 +1197,7 @@ function delete_auth0_user () {
   exit 0
 }
 
-function notify_hook () {
+function notify_hook {
   debug "${FUNCNAME[0]}" "$@"
 
   local json_hosted=$(jq . << EOF
@@ -1240,13 +1240,13 @@ EOF
        -d "${json}"
 }
 
-function list_domains () {
+function list_domains {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -lDn "${OPT_DOMAIN}" | awk '{print $3}'
 }
 
-function is_domain_available () {
+function is_domain_available {
   debug "${FUNCNAME[0]}" "$@"
 
   local domain="${1}"
@@ -1258,7 +1258,7 @@ function is_domain_available () {
   fi
 }
 
-function find_available_domain () {
+function find_available_domain {
   debug "${FUNCNAME[0]}" "$@"
 
   local query="${1}"
@@ -1275,7 +1275,7 @@ function find_available_domain () {
   fi
 }
 
-function create_domain () {
+function create_domain {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1299,7 +1299,7 @@ function create_domain () {
   fi
 }
 
-function remote_install () {
+function remote_install {
   debug "${FUNCNAME[0]}" "$@"
 
   display_banner "Performing remote installation ..."
@@ -1341,7 +1341,7 @@ function remote_install () {
   exit 0
 }
 
-function send_yaml_filter () {
+function send_yaml_filter {
   debug "${FUNCNAME[0]}" "$@"
 
   local filter="${1:-${OPT_YAML_FILTER}}"
@@ -1353,7 +1353,7 @@ function send_yaml_filter () {
   fi
 }
 
-function enable_ssl () {
+function enable_ssl {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_CONFIG_ENABLE_SSL}" && -n "${VAL_DROPLET_NAME}" ]]; then
@@ -1361,7 +1361,7 @@ function enable_ssl () {
   fi
 }
 
-function disable_ssl () {
+function disable_ssl {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_CONFIG_DISABLE_SSL}" && -n "${VAL_DROPLET_NAME}" ]]; then
@@ -1369,7 +1369,7 @@ function disable_ssl () {
   fi
 }
 
-function set_ssl_domain () {
+function set_ssl_domain {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_CONFIG_DOMAIN_NAME}" && -n "${VAL_DROPLET_NAME}" ]]; then
@@ -1377,7 +1377,7 @@ function set_ssl_domain () {
   fi
 }
 
-function send_filter () {
+function send_filter {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_NAME}" ]]; then
@@ -1401,7 +1401,7 @@ function send_filter () {
   exit $?
 }
 
-function query_filter () {
+function query_filter {
   debug "${FUNCNAME[0]}" "$@"
 
   local filter="${OPT_QUERY_FILTER}"
@@ -1416,7 +1416,7 @@ function query_filter () {
   exit $?
 }
 
-function connect_ssh () {
+function connect_ssh {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1426,7 +1426,7 @@ function connect_ssh () {
   exit $?
 }
 
-function connect_sql () {
+function connect_sql {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1436,7 +1436,7 @@ function connect_sql () {
   exit $?
 }
 
-function send_command () {
+function send_command {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1446,7 +1446,7 @@ function send_command () {
   exit $?
 }
 
-function expunge_instance () {
+function expunge_instance {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -xdn "${VAL_DROPLET_NAME}"
@@ -1454,7 +1454,7 @@ function expunge_instance () {
   exit $?
 }
 
-function force_expunge_instance () {
+function force_expunge_instance {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -xdn "${VAL_DROPLET_NAME}" --force
@@ -1462,7 +1462,7 @@ function force_expunge_instance () {
   exit $?
 }
 
-function list_instances () {
+function list_instances {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -ld | awk "/[0-9]+\s+miki/" | sed 's/\ *miki-/ /' | column -t
@@ -1470,13 +1470,13 @@ function list_instances () {
   exit $?
 }
 
-function generate_hash () {
+function generate_hash {
   debug "${FUNCNAME[0]}" "$@"
 
   echo "${1}" | htpasswd -niBC 10 "" | tr -d ':\n'
 }
 
-function load_remote_sql () {
+function load_remote_sql {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1485,20 +1485,20 @@ function load_remote_sql () {
   run_ssh "${OPT_DROPLET_USER}@${address}" "/usr/local/bin/pgsql -f ${file}; rm -f ${file}"
 }
 
-function generate_admin_password () {
+function generate_admin_password {
   debug "${FUNCNAME[0]}" "$@"
 
   VAL_ADMIN_PASSWORD="$(goxkcdpwgen -n 2)"
   VAL_ADMIN_PASSWORD_HASH=$(generate_hash "${VAL_ADMIN_PASSWORD}")
 }
 
-function generate_date () {
+function generate_date {
   debug "${FUNCNAME[0]}" "$@"
 
   date +"%Y-%m-%dT%H:%M:%S.000%Z"
 }
 
-function create_admin_sql_file () {
+function create_admin_sql_file {
   debug "${FUNCNAME[0]}" "$@"
 
   local name=Administrator
@@ -1524,7 +1524,7 @@ EOF
   fi
 }
 
-function upload_admin_sql_file () {
+function upload_admin_sql_file {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1535,13 +1535,13 @@ function upload_admin_sql_file () {
   rm -f "${VAL_ADMIN_SQL_LOCAL_FILE}"
 }
 
-function remote_reset_admin_password () {
+function remote_reset_admin_password {
   debug "${FUNCNAME[0]}" "$@"
 
   load_remote_sql "${VAL_ADMIN_SQL_REMOTE_FILE}"
 }
 
-function display_admin_password () {
+function display_admin_password {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_RESET_ADMIN_PASSWORD}" ]]; then
@@ -1549,7 +1549,7 @@ function display_admin_password () {
   fi
 }
 
-function reset_admin_password () {
+function reset_admin_password {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_EMAIL}" && -n "${VAL_DROPLET_NAME}" ]]; then
@@ -1562,14 +1562,14 @@ function reset_admin_password () {
   fi
 }
 
-function generate_support_password () {
+function generate_support_password {
   debug "${FUNCNAME[0]}" "$@"
 
   VAL_SUPPORT_PASSWORD="$(goxkcdpwgen -n 2)"
   VAL_SUPPORT_PASSWORD_HASH=$(generate_hash "${VAL_SUPPORT_PASSWORD}")
 }
 
-function create_support_sql_file () {
+function create_support_sql_file {
   debug "${FUNCNAME[0]}" "$@"
 
   VAL_SUPPORT_SQL_LOCAL_FILE=$(mktemp --suffix .sql)
@@ -1581,7 +1581,7 @@ INSERT INTO "userGroups" VALUES('100', '100', '1');
 EOF
 }
 
-function upload_support_sql_file () {
+function upload_support_sql_file {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1591,19 +1591,19 @@ function upload_support_sql_file () {
   rm -f "${VAL_SUPPORT_SQL_LOCAL_FILE}"
 }
 
-function remote_create_support_account () {
+function remote_create_support_account {
   debug "${FUNCNAME[0]}" "$@"
 
   load_remote_sql "${VAL_SUPPORT_SQL_REMOTE_FILE}"
 }
 
-function display_support_password () {
+function display_support_password {
   debug "${FUNCNAME[0]}" "$@"
 
   echo "${VAL_SUPPORT_PASSWORD}"
 }
 
-function create_support_account () {
+function create_support_account {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_CREATE_SUPPORT_ACCOUNT}" ]]; then
@@ -1617,7 +1617,7 @@ function create_support_account () {
   exit 0
 }
 
-function remote_load_sql_file () {
+function remote_load_sql_file {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1631,7 +1631,7 @@ function remote_load_sql_file () {
   exit 0
 }
 
-function power_on_droplet () {
+function power_on_droplet {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -dn "${VAL_DROPLET_NAME}" --power-on
@@ -1639,7 +1639,7 @@ function power_on_droplet () {
   exit $?
 }
 
-function power_off_droplet () {
+function power_off_droplet {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -dn "${VAL_DROPLET_NAME}" --power-off
@@ -1647,7 +1647,7 @@ function power_off_droplet () {
   exit $?
 }
 
-function restore_database () {
+function restore_database {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1659,7 +1659,7 @@ function restore_database () {
   exit 0
 }
 
-function dump_database () {
+function dump_database {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1672,7 +1672,7 @@ function dump_database () {
   exit 0
 }
 
-function restart_miki () {
+function restart_miki {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1682,7 +1682,7 @@ function restart_miki () {
   exit $?
 }
 
-function restart_machine () {
+function restart_machine {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1692,7 +1692,7 @@ function restart_machine () {
   exit $?
 }
 
-function copy_file () {
+function copy_file {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1704,7 +1704,7 @@ function copy_file () {
   exit $?
 }
 
-function _check_name () {
+function _check_name {
   debug "${FUNCNAME[0]}" "$@"
 
   doadm -ld | awk "/[0-9]+\s+miki/" | awk '{print $2}' | sed 's/^miki-//' | grep -q "^${OPT_NAME}$"
@@ -1712,7 +1712,7 @@ function _check_name () {
   return $?
 }
 
-function check_name () {
+function check_name {
   debug "${FUNCNAME[0]}" "$@"
 
   if _check_name; then
@@ -1722,7 +1722,7 @@ function check_name () {
   fi
 }
 
-function garbage_collect () {
+function garbage_collect {
   debug "${FUNCNAME[0]}" "$@"
 
   rm -rf /tmp/tmp.*.miki
@@ -1736,7 +1736,7 @@ function garbage_collect () {
   exit 0
 }
 
-function rename_instance () {
+function rename_instance {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1747,7 +1747,7 @@ function rename_instance () {
   exit 0
 }
 
-function replace_instance () {
+function replace_instance {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1763,7 +1763,7 @@ function replace_instance () {
   exit 0
 }
 
-function snapshot_instance () {
+function snapshot_instance {
   debug "${FUNCNAME[0]}" "$@"
 
   local address=$(get_droplet_address "${VAL_DROPLET_NAME}")
@@ -1778,7 +1778,7 @@ function snapshot_instance () {
   exit 0
 }
 
-function is_valid_desktop () {
+function is_valid_desktop {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ "${OPT_DESKTOP}" == "linux" || \
@@ -1790,7 +1790,7 @@ function is_valid_desktop () {
   fi
 }
 
-function extract_desktop () {
+function extract_desktop {
   debug "${FUNCNAME[0]}" "$@"
 
   OPT_MIKI_DESKTOP_DIRECTORY="$(mktemp -d --suffix .miki-desktop)"
@@ -1800,20 +1800,20 @@ function extract_desktop () {
   push "${OPT_MIKI_DESKTOP_DIRECTORY}/miki-desktop"
 }
 
-function set_miki_version () {
+function set_miki_version {
   debug "${FUNCNAME[0]}" "$@"
 
   VAL_MIKI_VERSION=$(jq -r '.version' app/miki/package.json)
 }
 
-function delete_modules () {
+function delete_modules {
   debug "${FUNCNAME[0]}" "$@"
 
   rm -rf app/miki/node_modules
   rm -rf node_modules
 }
 
-function install_modules () {
+function install_modules {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_DESKTOP}" ]]; then
@@ -1837,7 +1837,7 @@ function install_modules () {
   fi
 }
 
-function fix_dependencies () {
+function fix_dependencies {
   debug "${FUNCNAME[0]}" "$@"
 
   case "${OPT_DESKTOP}" in
@@ -1858,7 +1858,7 @@ function fix_dependencies () {
   esac
 }
 
-function package_desktop () {
+function package_desktop {
   debug "${FUNCNAME[0]}" "$@"
 
   local icons="assets/icons/icon.icns"
@@ -1881,14 +1881,14 @@ function package_desktop () {
   esac
 }
 
-function delete_modules () {
+function delete_modules {
   debug "${FUNCNAME[0]}" "$@"
 
   rm -rf app/miki/node_modules
   rm -rf node_modules
 }
 
-function install_production_modules () {
+function install_production_modules {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_DESKTOP}" ]]; then
@@ -1912,7 +1912,7 @@ function install_production_modules () {
   fi
 }
 
-function build_desktop () {
+function build_desktop {
   debug "${FUNCNAME[0]}" "$@"
 
   local mnt="/mnt/loop.${VAL_RANDOM}"
@@ -1940,7 +1940,7 @@ function build_desktop () {
   esac
 }
 
-function upload_file () {
+function upload_file {
   debug "${FUNCNAME[0]}" "$@"
 
   local file="$1"
@@ -1949,7 +1949,7 @@ function upload_file () {
   s3cmd -P --expiry-days "${VAL_SPACES_EXPIRY}" put "${file}" "${OPT_SPACES_BUCKET}/${name}"
 }
 
-function sign_installer () {
+function sign_installer {
   debug "${FUNCNAME[0]}" "$@"
 
   case "${OPT_DESKTOP}" in
@@ -1971,7 +1971,7 @@ function sign_installer () {
   esac
 }
 
-function upload_desktop () {
+function upload_desktop {
   debug "${FUNCNAME[0]}" "$@"
 
   local hash=$(echo ${OPT_NAME}${OPT_SUBSCRIPTION_ID}${OPT_SUBDOMAIN}${OPT_DESKTOP} | sha256sum | awk '{print $1}')
@@ -1996,13 +1996,13 @@ function upload_desktop () {
   esac
 }
 
-function delete_miki_desktop_directory () {
+function delete_miki_desktop_directory {
   debug "${FUNCNAME[0]}" "$@"
 
   [[ -d "${OPT_MIKI_DESKTOP_DIRECTORY}" ]] && rm -rf "${OPT_MIKI_DESKTOP_DIRECTORY}"
 }
 
-function desktop_display_greeting () {
+function desktop_display_greeting {
   debug "${FUNCNAME[0]}" "$@"
 
   cat << EOF > /dev/stdout
@@ -2018,7 +2018,7 @@ Password: ${VAL_ADMIN_PASSWORD}
 EOF
 }
 
-function desktop_install () {
+function desktop_install {
   debug "${FUNCNAME[0]}" "$@"
 
   display_banner "Performing desktop installation ..."
@@ -2052,7 +2052,7 @@ function desktop_install () {
   exit 0
 }
 
-function dispatch_install () {
+function dispatch_install {
   debug "${FUNCNAME[0]}" "$@"
 
   if [[ -n "${OPT_EMAIL}" && -n "${OPT_DESKTOP}" ]] && is_valid_desktop; then
@@ -2066,7 +2066,7 @@ function dispatch_install () {
 }
 
 
-function main () {
+function main {
   debug "${FUNCNAME[0]}" "$@"
 
   parse_arguments "$@"
