@@ -152,7 +152,7 @@ function error () {
   exit 1
 }
 
-function warn () {
+function warning () {
   if [[ "${OS}" == "Darwin" ]]; then
     echo "WARNING: ${@}" >&2
   else
@@ -843,7 +843,7 @@ function create_tarball () {
     tar -C "$(dirname ${OPT_MIKI_DIRECTORY})" -czf "${file}" --exclude ".git" \
         "$(basename ${OPT_MIKI_DIRECTORY})"
   else
-    error "ERROR: Cannot create a tarball. Aborting."
+    error "Cannot create a tarball. Aborting."
   fi
 }
 
@@ -1295,7 +1295,7 @@ function create_domain () {
   if [[ -n "${subdomain}" ]]; then
     doadm -cDn "${OPT_DOMAIN}" -s "${subdomain}" -A "${address}"
   else
-    warn "WARNING: Unable to create domain. Skipping."
+    warning "WARNING: Unable to create domain. Skipping."
   fi
 }
 
@@ -1831,7 +1831,7 @@ function install_modules () {
         tar -xf "${VAL_MODULES_MACOS_MIKI_DESKTOP}"
         ;;
       (*)
-        error "ERROR: The specified platform does not exist. Aborting."
+        error "The specified platform does not exist. Aborting."
         ;;
     esac
   fi
@@ -1853,7 +1853,7 @@ function fix_dependencies () {
       rm -rf app/pgsql/macos
       ;;
     (*)
-      error "ERROR: The specified platform is not supported. Aborting."
+      error "The specified platform is not supported. Aborting."
       ;;
   esac
 }
@@ -1876,7 +1876,7 @@ function package_desktop () {
       electron-packager . --platform=darwin --out=out --icon="${icons}" --overwrite --ignore="(app/pgsql/windows|dmg)"
       ;;
     (*)
-      error "ERROR: The specified platform is not supported. Aborting."
+      error "The specified platform is not supported. Aborting."
       ;;
   esac
 }
@@ -1906,7 +1906,7 @@ function install_production_modules () {
         tar -xf "${VAL_PROD_MODULES_MACOS_MIKI_DESKTOP}"
         ;;
       (*)
-        error "ERROR: The specified platform does not exist. Aborting."
+        error "The specified platform does not exist. Aborting."
         ;;
     esac
   fi
@@ -1935,7 +1935,7 @@ function build_desktop () {
       sudo rm -rf "${mnt}"
       ;;
     (*)
-      error "ERROR: The specified platform is not supported. Aborting."
+      error "The specified platform is not supported. Aborting."
       ;;
   esac
 }
@@ -1966,7 +1966,7 @@ function sign_installer () {
       return 0
       ;;
     (*)
-      error "ERROR: The specified platform is not supported. Aborting."
+      error "The specified platform is not supported. Aborting."
       ;;
   esac
 }
@@ -1991,7 +1991,7 @@ function upload_desktop () {
       OPT_DESKTOP_URL="${OPT_SPACES_URL}/${prefix}/Miki%20Desktop%20Installer.dmg"
       ;;
     (*)
-      error "ERROR: The specified platform is not supported. Aborting."
+      error "The specified platform is not supported. Aborting."
       ;;
   esac
 }
@@ -2061,7 +2061,7 @@ function dispatch_install () {
           -n "${OPT_DATABASE_NAME}" && -n "${OPT_DATABASE_USER}" ]]; then
     remote_install
   else
-    error "ERROR: Installation type not found. Aborting."
+    error "Installation type not found. Aborting."
   fi
 }
 
