@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="3.1.3"
+readonly VERSION="3.2.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1195,6 +1195,33 @@ function delete_auth0_user {
   fi
 
   exit 0
+}
+
+function get_auth0_user {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local token=$(get_auth0_token)
+  local user=${1:-auth0%7C${OPT_NAME}}
+
+  if [[ -n "${user}" ]]; then
+    curl "https://mimix.us.auth0.com/api/v2/users/${user}" \
+         -s -X POST \
+         -H "Authorization: Bearer ${token}"
+  else
+    return 1
+  fi
+}
+
+function is_auth0_user_verified {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local user=${1:-auth0%7C${OPT_NAME}}
+
+  if [[ "$(get_auth0_user ${user} | jq -r '.email_verified')" == "true" ]]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 function notify_hook {
