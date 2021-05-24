@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="3.2.0"
+readonly VERSION="3.2.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -1212,12 +1212,21 @@ function get_auth0_user {
   fi
 }
 
+function query_auth0_user {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local user="${1:-auth0%7C${OPT_NAME}}"
+  local query="$2"
+
+  get_auth0_user "${user}" | jq -r "${query}"
+}
+
 function is_auth0_user_verified {
   debug "${FUNCNAME[0]}" "$@"
 
-  local user=${1:-auth0%7C${OPT_NAME}}
+  local user="${1:-auth0%7C${OPT_NAME}}"
 
-  if [[ "$(get_auth0_user ${user} | jq -r '.email_verified')" == "true" ]]; then
+  if [[ "$(query_auth0_user ${user} '.email_verified')" == "true" ]]; then
     return 0
   else
     return 1
