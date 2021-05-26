@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="3.2.1"
+readonly VERSION="3.3.0"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -141,6 +141,12 @@ OPT_SPACES_URL="http://${OPT_SPACES_SUBDOMAIN}.${OPT_SPACES_BASE}"
 OPT_MIKI_DESKTOP_DIRECTORY=
 OPT_SPACES_BUCKET="s3://${OPT_SPACES_SUBDOMAIN}"
 OPT_DESKTOP_URL=
+
+OPT_TEST_DRIVE_NAME=
+OPT_TEST_DRIVE_START_PORT=60750
+OPT_TEST_DRIVE_END_PORT=65000
+OPT_TEST_DRIVE_DATABASE_PORT=
+OPT_TEST_DRIVE_DATABASE_USER=testdrive
 
 function error {
   if [[ "${OS}" == "Darwin" ]]; then
@@ -2101,6 +2107,79 @@ function dispatch_install {
   fi
 }
 
+function test_drive_create_name {
+  debug "${FUNCNAME[0]}" "$@"
+
+  OPT_TEST_DRIVE_NAME="$(goxkcdpwgen -n 2 | tr ' ' '-')"
+
+  return 0
+}
+
+function test_drive_find_port {
+  local port=$(shuf -i ${OPT_TEST_DRIVE_START_PORT}-${OPT_TEST_DRIVE_END_PORT} -n 1)
+
+  netstat -lat | grep "${port}" > /dev/null
+
+  if [[ "$?" == 1 ]]; then
+    echo ${port}
+  else
+    test_drive_find_port
+  fi
+}
+
+function test_drive_set_database_port {
+  debug "${FUNCNAME[0]}" "$@"
+
+  OPT_TEST_DRIVE_DATABASE_PORT=$(test_drive_find_port)
+}
+
+function test_drive_create_config {
+  debug "${FUNCNAME[0]}" "$@"
+
+  cat << EOF > /dev/stdout
+port: 50250
+
+db:
+  type: postgres
+  host: localhost
+  port: ${OPT_TEST_DRIVE_DATABASE_PORT}
+  user: ${OPT_TEST_DRIVE_DATABASE_USER}
+  pass: 0123456789
+  db: ${OPT_TEST_DRIVE_NAME}
+  ssl: false
+
+ssl:
+  enabled: false
+
+bindIP: 0.0.0.0
+
+logLevel: info
+
+offline: true
+
+ha: false
+
+dataPath: ./data
+EOF
+}
+
+function test_drive_create_init_sql {
+  debug "${FUNCNAME[0]}" "$@"
+
+  local password=$(generate_hash 0123456789)
+
+  cat << EOF > /dev/stdout
+CREATE database ${OPT_TEST_DRIVE_NAME};
+CREATE user ${OPT_TEST_DRIVE_NAME} password '${password}';
+GRANT ALL PRIVILEGES ON DATABASE ${OPT_TEST_DRIVE_NAME} TO ${OPT_TEST_DRIVE_NAME};
+EOF
+}
+
+function test_drive_setup_database {
+  debug "${FUNCNAME[0]}" "$@"
+
+  return 0
+}
 
 function main {
   debug "${FUNCNAME[0]}" "$@"
