@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SELF="$(basename ${BASH_SOURCE[0]})"
 readonly SELF_DIR="$(cd $(dirname $(readlink -f ${BASH_SOURCE[0]})) > /dev/null 2>&1 && pwd)"
 readonly OS="$(uname)"
-readonly VERSION="3.3.0"
+readonly VERSION="3.3.1"
 
 OPT_HELP=
 OPT_DEBUG=
@@ -2179,6 +2179,15 @@ function test_drive_setup_database {
   debug "${FUNCNAME[0]}" "$@"
 
   return 0
+}
+
+function test_drive_initialize {
+  debug "${FUNCNAME[0]}" "$@"
+
+  test_drive_create_name
+  test_drive_set_database_port
+  # test_drive_create_config
+  # test_drive_create_init_sql
 }
 
 function main {
